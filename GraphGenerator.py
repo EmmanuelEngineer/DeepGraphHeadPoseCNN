@@ -1,28 +1,10 @@
-import math
-import pickle
-from mediapipe.python.solutions.drawing_utils import DrawingSpec
 import DataUtils
 from config import Config
 import networkx as nx
-from concurrent.futures import ProcessPoolExecutor
 import math
-import matplotlib.pyplot as plt
-import numpy as np
-import time
 
-data = None
-oracle = None
-try:
-    with open(Config.dataset_folder + "data_array.pickle", "rb") as df:
-        data = pickle.load(df)
-except Exception as ex:
-    print("Cannot load data" + ex)
 
-try:
-    with open(Config.dataset_folder + "oracle_list.pickle", "rb") as of:
-        oracle = pickle.load(of)
-except Exception as ex:
-    print("Cannot load data" + ex)
+data = DataUtils.data_loader(Config.dataset_folder + "data_array.pickle")
 
 
 def node_distance(a, b):
@@ -32,51 +14,60 @@ def node_distance(a, b):
     return d
 
 
-def get_max_from_mins(array):  # get max edge
-    maximum = [0, 0]
-    for idx, x in enumerate(array):
-        if x[1] > maximum[1]:
-            maximum = x
-    maximum_distance = maximum[1]
-    index_of_maximum = maximum[0]
-    return array, maximum_distance, index_of_maximum
-
-
-def substitute_max_in_array(array, index, index_of_maximum, distance):
-    for x in array:
-        if x[0] == index_of_maximum:
-            array.remove(x)
+def to_ignore(a_index, b_index, selected_edges):
+    counter = 0
+    flag = False
+    for edge in selected_edges:
+        if edge[0] == a_index and edge[1] == b_index:  # The opposite edge exist
+            flag = False
             break
-    array.append((index, distance))
-    get_max_from_mins(array)
-    return array
+
+        if edge[1] == b_index or edge[0] == b_index:
+            counter += 1
+
+    if counter >= Config.Extraction.edges_per_index - 1 or flag:
+        return True
+    else:
+        return False
+
+
+def sort(edge):
+    return edge[2]
 
 
 def edge_list_generator(node_list):
-    # For each node links the five closest nodes with an edge and the distance as weight
-    edge_list = []
+    selected_edges = []
     for a_index, a_node in enumerate(node_list):
-        n_of_temp = 5
-        array_of_mins = []
+        edges_per_single_node = []
+        counter = 0
+        if a_index == 104:
+            print(number_of_edges, " ", edges_per_single_node , selected_edges)
+        for edge in selected_edges:
+            if edge[1] == a_index or edge[0] == a_index:  # number of edges from/to a node
+                counter += 1
+        number_of_edges = Config.Extraction.edges_per_index - counter
+        if number_of_edges <= 0:
+            continue
         for b_index, b_node in enumerate(node_list):
-            if (a_index == b_index) or ((b_index, a_index) in [(n[0], n[1]) for n in edge_list]): # check for same node or edge already created
+            if a_index == b_index:
                 continue
-            if n_of_temp > 0:
-                array_of_mins.append((b_index, node_distance(a_node, b_node)))
-                n_of_temp -= 1
-                continue
-            array_of_mins, maximum_distance, index_of_maximum = get_max_from_mins(array_of_mins)
-            distance = node_distance(a_node, b_node)
-            if distance < maximum_distance:
-                array_of_mins= substitute_max_in_array(array_of_mins, b_index, index_of_maximum, distance)
 
-        for node in array_of_mins:
-            edge_list.append((a_index, node[0], {"weight": node[1]}))
+            if not to_ignore(a_index, b_index, selected_edges):
+                edges_per_single_node.append((a_index, b_index,
+                                              node_distance(node_list[a_index], node_list[b_index])))
 
-    return edge_list
+        #  minimum_edges = edges_per_single_node[0:Config.Extraction.edges_per_index]
+        edges_per_single_node.sort(key=sort)
+
+        for x in edges_per_single_node[:number_of_edges]:
+            selected_edges.append(x)
+    selected_edges1 = []
+    for x in selected_edges:
+        selected_edges1.append((x[0], x[1], {"weight": x[2]}))
+    return selected_edges1
 
 
-def generate_graph(element):  # elements will contain the subject number and the list of nodes
+def generate_graph(element):  # elements will contain the subject number and the list of landmarks
     number = element[0]
     nodes = element[1]
     nodes_to_graph = []
@@ -89,6 +80,7 @@ def generate_graph(element):  # elements will contain the subject number and the
     return number, graph
 
 
+"""
 # Executive Code
 begin = time.time()
 array_of_graphs = []
@@ -101,23 +93,5 @@ end = time.time()
 print("Completed in ", end - begin)
 print(array_of_graphs)
 
-
-def data_saver(location, oracle_to_dump):
-    try:
-        with open(location, "wb") as d:
-            pickle.dump(oracle_to_dump, d)
-    except Exception as ex:
-        print("Cannot dump oracle:", ex)
-
-
-data_saver(Config.dataset_folder + "array_graph_networkx.pickle", array_of_graphs)
-
+DataUtils.data_saver(Config.dataset_folder + "array_graph_networkx.pickle", array_of_graphs)
 """
-image = np.zeros((500, 500, 3), dtype = "uint8")
-DataUtils.draw_landmarks(image,
-                         data[1],
-                         landmark_drawing_spec=DrawingSpec())
-plt.title("Resultant Image");
-plt.axis('off');
-plt.imshow(image);
-plt.show()"""

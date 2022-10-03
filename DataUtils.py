@@ -16,94 +16,59 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def draw_landmarks(  # Personalized version for this application
-        image: np.ndarray,
-        landmark_list,
-        connections: Optional[List[Tuple[int, int]]] = None,
-        landmark_drawing_spec: Union[DrawingSpec,
-                                     Mapping[int, DrawingSpec]] = DrawingSpec(
-            color=RED_COLOR),
-        connection_drawing_spec: Union[DrawingSpec,
-                                       Mapping[Tuple[int, int],
-                                               DrawingSpec]] = DrawingSpec()):
-    """Draws the landmarks and the connections on the image.
-
-  Args:
-    image: A three channel BGR image represented as numpy ndarray.
-    landmark_list: A normalized landmark list proto message to be annotated on
-      the image.
-    connections: A list of landmark index tuples that specifies how landmarks to
-      be connected in the drawing.
-    landmark_drawing_spec: Either a DrawingSpec object or a mapping from
-      hand landmarks to the DrawingSpecs that specifies the landmarks' drawing
-      settings such as color, line thickness, and circle radius.
-      If this argument is explicitly set to None, no landmarks will be drawn.
-    connection_drawing_spec: Either a DrawingSpec object or a mapping from
-      hand connections to the DrawingSpecs that specifies the
-      connections' drawing settings such as color and line thickness.
-      If this argument is explicitly set to None, no landmark connections will
-      be drawn.
-
-  Raises:
-    ValueError: If one of the followings:
-      a) If the input image is not three channel BGR.
-      b) If any connetions contain invalid landmark index.
-  """
-    if not landmark_list:
-        return
-    if image.shape[2] != _BGR_CHANNELS:
-        raise ValueError('Input image must contain three channel bgr data.')
+def draw_edges(image, landmark_list, edges):
     image_rows, image_cols, _ = image.shape
-    idx_to_coordinates = {}
+    landmark_2d_coordinates = []
     for idx, landmark in enumerate(landmark_list):
-        landmark_px = _normalized_to_pixel_coordinates(landmark["x"], landmark["y"],
-                                                       image_cols, image_rows)
-        if landmark_px:
-            idx_to_coordinates[idx] = landmark_px
-    if connections:
-        num_landmarks = len(landmark_list.landmark)
-        # Draws the connections if the start and end landmarks are both visible.
-        for connection in connections:
-            start_idx = connection[0]
-            end_idx = connection[1]
-            if not (0 <= start_idx < num_landmarks and 0 <= end_idx < num_landmarks):
-                raise ValueError(f'Landmark index is out of range. Invalid connection '
-                                 f'from landmark #{start_idx} to landmark #{end_idx}.')
-            if start_idx in idx_to_coordinates and end_idx in idx_to_coordinates:
-                drawing_spec = connection_drawing_spec[connection] if isinstance(
-                    connection_drawing_spec, Mapping) else connection_drawing_spec
-                cv2.line(image, idx_to_coordinates[start_idx],
-                         idx_to_coordinates[end_idx], drawing_spec.color,
-                         drawing_spec.thickness)
-    # Draws landmark points after finishing the connection lines, which is
-    # aesthetically better.
-    if landmark_drawing_spec:
-        for idx, landmark_px in idx_to_coordinates.items():
-            drawing_spec = landmark_drawing_spec[idx] if isinstance(
-                landmark_drawing_spec, Mapping) else landmark_drawing_spec
-            # White circle border
-            circle_border_radius = max(drawing_spec.circle_radius + 1,
-                                       int(drawing_spec.circle_radius * 1.2))
-            cv2.circle(image, landmark_px, circle_border_radius, WHITE_COLOR,
-                       drawing_spec.thickness)
-            # Fill color into the circle
-            cv2.circle(image, landmark_px, drawing_spec.circle_radius,
-                       drawing_spec.color, drawing_spec.thickness)
+        landmark_2d_coordinates.append(_normalized_to_pixel_coordinates(landmark["x"], landmark["y"],
+                                                                        image_cols, image_rows))
+
+    for edge in edges:
+        start_idx = edge[0]
+        end_idx = edge[1]
+        cv2.line(image, landmark_2d_coordinates[start_idx],
+                 landmark_2d_coordinates[end_idx], Config.ImageVisualizer.edge_color,
+                 Config.ImageVisualizer.edge_thickness)
 
 
-def draw_edges(image, landmark_list, edges, drawing_spec):
+def draw_landmarks(image, landmark_list, original):
     image_rows, image_cols, _ = image.shape
-    idx_to_coordinates = {}
+    landmark_2d_coordinates = []
     for idx, landmark in enumerate(landmark_list):
-        landmark_px = _normalized_to_pixel_coordinates(landmark["x"], landmark["y"],
-                                                       image_cols, image_rows)
-        if landmark_px:
-            idx_to_coordinates[idx] = landmark_px
-        if edges:
-            num_landmarks = len(landmark_list)
-        for edge in edges:
-            start_idx = edge[0]
-            end_idx = edge[1]
-            cv2.line(image, idx_to_coordinates[start_idx],
-                     idx_to_coordinates[end_idx], drawing_spec.color,
-                     drawing_spec.thickness)
+        landmark_2d_coordinates.append(_normalized_to_pixel_coordinates(landmark["x"], landmark["y"],
+                                                                        image_cols, image_rows))
+    indexes = []  # get the original landmarx index before the extraction
+
+    if original:
+        for x in range(0, 468):
+            if x not in Config.Extraction.LandmarksToIgnore.total_landmarks:
+                indexes.append(x)
+    else:
+        indexes = range(0, len(landmark_list))
+
+    for idx, point in enumerate(landmark_2d_coordinates):
+        cv2.circle(image,
+                   point,
+                   Config.ImageVisualizer.landmark_thickness,
+                   Config.ImageVisualizer.landmark_color, -1)
+        cv2.putText(image, str(indexes[idx]), point, cv2.FONT_HERSHEY_SIMPLEX,
+                    Config.ImageVisualizer.landmark_text_height,
+                    Config.ImageVisualizer.landmark_color,
+                    1)
+
+
+def data_saver(location, data_to_save):
+    try:
+        with open(location, "wb") as d:
+            pickle.dump(data_to_save, d)
+    except Exception as ex:
+        print("Cannot dump oracle:", ex)
+
+
+def data_loader(path):
+    try:
+        with open(path, "rb") as df:
+            data = pickle.load(df)
+    except Exception as ex:
+        print("Cannot load data" + ex)
+    return data
