@@ -4,7 +4,7 @@ import numpy as np
 from time import time
 import mediapipe as mp
 import matplotlib.pyplot as plt
-from config import Config
+from Config import Config
 
 mp_face_mesh = mp.solutions.face_mesh
 

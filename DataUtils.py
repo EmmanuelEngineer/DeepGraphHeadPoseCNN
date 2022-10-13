@@ -2,10 +2,9 @@ import math
 import pickle
 
 import cv2
-from mediapipe.python.solutions.drawing_utils import DrawingSpec, RED_COLOR, _BGR_CHANNELS, \
-    _normalized_to_pixel_coordinates, WHITE_COLOR
+from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
 
-from config import Config
+import Config
 import networkx as nx
 import math
 from typing import List, Mapping, Optional, Tuple, Union

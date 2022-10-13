@@ -1,28 +1,25 @@
 import cv2
 import networkx as nx
 from matplotlib import pyplot as plt
+
+import Config
 import GraphGenerator
-from DatasetExtractor import Data_Extractor
+import ImageAnalizer
 import DataUtils
+import numpy as np
 
-"""
-# TODO inserire codice per importare il dataset
-
-summary = pd.DataFrame(
-    [(g.number_of_nodes(), g.number_of_edges()) for g in graphs],
-    columns=["nodes", "edges"],
-)
-print(summary.describe().round(1))
-#graph_labels = pd.get_dummies(graph_labels, drop_first=True)#Ottenere nomi generici di colonne
-"""
-
-images_paths = Data_Extractor.import_images_paths("/home/emmavico/Desktop/temp/*")
-point_array = Data_Extractor.landmark_extraction(images_paths)
+images_paths = ImageAnalizer.import_images_paths(Config.image_dataset)
+point_array = ImageAnalizer.landmark_extraction(images_paths)
 
 for index, image_path in enumerate(images_paths):
     image = cv2.imread(image_path)
     image = image[:, :, ::-1].copy()
     edge_list = GraphGenerator.edge_list_generator(point_array[0])
+    image_rows, image_cols, _ = image.shape
+    if Config.Extraction.scale_landmarks:
+        image_rows = 1000
+        image_cols = 1000
+    image = np.zeros((image_rows, image_cols, 3), dtype="uint8")
     DataUtils.draw_edges(image,
                          point_array[index],
                          [(x[0], x[1]) for x in edge_list])
@@ -33,9 +30,6 @@ for index, image_path in enumerate(images_paths):
         nodes_to_graph.append((idn, x))  # Because networkx needs the node index to work
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edge_list)
-    for node in graph.edges():
-        print(node)
-
     fig = plt.figure(figsize=[10, 10], dpi=300)
     plt.title("Resultant Image")
     plt.axis('off')

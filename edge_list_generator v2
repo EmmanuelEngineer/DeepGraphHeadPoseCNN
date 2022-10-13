@@ -1,0 +1,50 @@
+def to_ignore(a_index, b_index, selected_edges):
+    counter = 0
+    flag = False
+    if a_index == 89 and b_index == 88:
+        print(flag)
+    for edge in selected_edges:
+        if edge[0] == a_index and edge[1] == b_index:  # The opposite edge exist
+            flag = False
+            break
+
+        if edge[1] == b_index or edge[0] == b_index:
+            counter += 1
+
+    if counter >= Config.Extraction.edges_per_index - 1 or flag:
+        return True
+    else:
+        return False
+
+
+def sort(edge):
+    return edge[2]
+
+def edge_generator_list(node_list)
+selected_edges = []
+   for a_index, a_node in enumerate(node_list):
+        edges_per_single_node = []
+        counter = 0
+        for edge in selected_edges:
+            if edge[1] == a_index or edge[0] == a_index:  # number of edges from/to a node
+                counter += 1
+        number_of_edges = Config.Extraction.edges_per_index - counter
+        if number_of_edges <= 0:
+            continue
+        for b_index, b_node in enumerate(node_list):
+            if a_index == b_index:
+                continue
+
+            if not to_ignore(a_index, b_index, selected_edges):
+                edges_per_single_node.append((a_index, b_index,
+                                              node_distance(node_list[a_index], node_list[b_index])))
+
+        edges_per_single_node.sort(key=sort)
+
+        for x in edges_per_single_node[:number_of_edges]:
+            selected_edges.append(x)
+
+    selected_edges1 = []
+    for x in selected_edges:
+        selected_edges1.append((x[0], x[1], {"weight": x[2]}))
+    return selected_edges1
