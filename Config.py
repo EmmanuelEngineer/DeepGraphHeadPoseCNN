@@ -4,7 +4,7 @@ class Test:
 
 
 class Debug:
-    active = True
+    active = False
 
 
 image_dataset = "/home/emmavico/Documents/Posa_Testa/biwi_rgb_renamed/*/*" if not Debug.active else Test.image_dataset

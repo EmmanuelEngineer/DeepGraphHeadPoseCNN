@@ -19,9 +19,6 @@ import networkx as nx
 
 import DataUtils
 
-newtorkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
-oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
-
 
 def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as of the stellargraph docs
     output_list = []
@@ -31,7 +28,10 @@ def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as
         output_list.append({"nodes": nodes, "edges": edges})
     return output_list
 
-"""
+
+newtorkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
+oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
+
 pandas_oracle = pd.DataFrame.from_dict(oracle_list)
 pandas_graph_list = networkx_list_to_pandas_list(newtorkx_list)
 print(pandas_oracle)
@@ -74,11 +74,11 @@ predictions = Dense(units=3)(x_out)
 model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
 model.compile(
-    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=[metrics.cosine_proximity],  # Creazione del modello effettivo
+    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=[metrics.accuracy],  # Creazione del modello effettivo
 )
 
 train_graphs, test_graphs = model_selection.train_test_split(
-    pandas_oracle, train_size=0.9, test_size=None, random_state=20
+    pandas_oracle, train_size=0.7, test_size=None, random_state=20
 )
 
 gen = PaddedGraphGenerator(graphs=stellargraph_graphs)
@@ -98,7 +98,7 @@ test_gen = gen.flow(  # dati per il test
     symmetric_normalization=False,
 )
 
-epochs = 100  # ripetizioni dell'addestramento
+epochs = 35  # ripetizioni dell'addestramento
 
 history = model.fit(
     train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
@@ -112,4 +112,3 @@ for name, val in zip(model.metrics_names, test_metrics):
     print("\t{}: {:0.4f}".format(name, val))
 
 model.save("model.h5")
-"""
