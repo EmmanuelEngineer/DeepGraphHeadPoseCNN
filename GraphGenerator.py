@@ -9,7 +9,7 @@ import Config
 import networkx as nx
 import math
 
-data = DataUtils.data_loader(Config.dataset_folder + "data_array.pickle")
+data = DataUtils.data_loader(Config.working_directory + "data_array.pickle")
 
 
 def node_distance(a, b):
@@ -74,8 +74,7 @@ def generate_graph(element):  # elements will contain the subject number and the
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edges)
     return number, graph
-
-
+"""
 
 # Executive Code
 begin = time.time()
@@ -88,5 +87,5 @@ with ProcessPoolExecutor(max_workers=Config.n_of_threads) as exe:
 end = time.time()
 print("Completed in ", end - begin)
 
-DataUtils.data_saver(Config.dataset_folder + "array_graph_networkx.pickle", array_of_graphs)
+DataUtils.data_saver(Config.working_directory + "array_graph_networkx.pickle", array_of_graphs)"""
 

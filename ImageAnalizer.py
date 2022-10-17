@@ -34,7 +34,7 @@ def extract_oracle(paths_of_images):
     for index, single_oracle in enumerate(paths_of_images):
         list_of_matches = re.findall(regex, single_oracle)
         arr = list_of_matches.pop()
-        oracle_array.append({"index": index, "pitch": float(arr[1]), "yaw": float(arr[3]), "roll": float(arr[5])})
+        oracle_array.append({"pitch": float(arr[1]), "yaw": float(arr[3]), "roll": float(arr[5])})
         counter += 1
     print("total counted = ", counter)
     return oracle_array
@@ -43,7 +43,7 @@ def extract_oracle(paths_of_images):
 def scale_landmarks(list_of_landmarks):
     dataframe = pd.DataFrame.from_records(list_of_landmarks)
     scaler = MinMaxScaler()
-    scaler.fit(dataframe)
+    scaler.fit(dataframe, dataframe.columns)
     d = scaler.transform(numpy.array(dataframe))
     dataframe = pd.DataFrame(d, columns=dataframe.columns)
     return dataframe.to_dict("records")
@@ -77,14 +77,11 @@ def landmark_extraction(list_of_paths):
             filtered_landmarks = scale_landmarks(filtered_landmarks)
         extracted_landmarks.append(filtered_landmarks)
     return extracted_landmarks
-
 """
 images_paths = import_images_paths(Config.image_dataset)
 oracle = extract_oracle(images_paths)
-DataUtils.data_saver(Config.dataset_folder + "oracle_list.pickle", oracle)
+DataUtils.data_saver(Config.working_directory + "oracle_list.pickle", oracle)
 
 landmark_array = landmark_extraction(images_paths)
-print(type(landmark_array), "length", len(landmark_array))
-print(oracle)
-DataUtils.data_saver(Config.dataset_folder + "data_array.pickle", landmark_array)
+DataUtils.data_saver(Config.working_directory + "data_array.pickle", landmark_array)
 """

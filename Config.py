@@ -1,6 +1,6 @@
 class Test:
     image_dataset = "/home/emmavico/Documents/Posa_Testa/Test/*"
-    dataset_folder = "./Dataset/Test/"
+    working_directory = "./Dataset/Test/"
 
 
 class Debug:
@@ -8,7 +8,7 @@ class Debug:
 
 
 image_dataset = "/home/emmavico/Documents/Posa_Testa/biwi_rgb_renamed/*/*" if not Debug.active else Test.image_dataset
-dataset_folder = "./Dataset/" if not Debug.active else Test.dataset_folder
+working_directory = "./Dataset/" if not Debug.active else Test.working_directory
 n_of_threads = 2
 
 
