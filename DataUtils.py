@@ -2,6 +2,7 @@ import math
 import pickle
 
 import cv2
+import pandas as pd
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
 
 import Config
@@ -71,3 +72,12 @@ def data_loader(path):
     except Exception as ex:
         print("Cannot load data" + ex)
     return data
+
+
+def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as of the stellargraph docs
+    output_list = []
+    for x in input_list:
+        edges = nx.to_pandas_edgelist(x)
+        nodes = pd.DataFrame.from_dict(dict(x.nodes(data=True)), orient='index')
+        output_list.append({"nodes": nodes, "edges": edges})
+    return output_list

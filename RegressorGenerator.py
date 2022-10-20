@@ -19,21 +19,11 @@ import networkx as nx
 
 import DataUtils
 
-
-def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as of the stellargraph docs
-    output_list = []
-    for x in input_list:
-        edges = nx.to_pandas_edgelist(x)
-        nodes = pd.DataFrame.from_dict(dict(x.nodes(data=True)), orient='index')
-        output_list.append({"nodes": nodes, "edges": edges})
-    return output_list
-
-
-newtorkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
+networkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
 oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
 
 pandas_oracle = pd.DataFrame.from_dict(oracle_list)
-pandas_graph_list = networkx_list_to_pandas_list(newtorkx_list)
+pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
 print(pandas_oracle)
 
 stellargraph_graphs = []
@@ -44,7 +34,7 @@ for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
 print(stellargraph_graphs[0].info())
 
 generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
-layer_sizes = [32, 32, 32, 3]
+layer_sizes = [32, 32, 32, 1]
 k = 35
 dgcnn_model = DeepGraphCNN(  #  Rete neurale che fa da traduttore per quella successiva
     layer_sizes=layer_sizes,
@@ -55,7 +45,7 @@ dgcnn_model = DeepGraphCNN(  #  Rete neurale che fa da traduttore per quella suc
     generator=generator,
 )
 
-# Rete Neurale per la traduzione
+# Rete Neurale che effettua il lavoro
 x_inp, x_out = dgcnn_model.in_out_tensors()
 x_out = Conv1D(filters=16, kernel_size=sum(layer_sizes), strides=sum(layer_sizes))(x_out)  # Filtro convoluzionale
 x_out = MaxPool1D(pool_size=2)(x_out)  # https://keras.io/api/layers/pooling_layers/max_pooling1d/
@@ -74,7 +64,7 @@ predictions = Dense(units=3)(x_out)
 model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
 model.compile(
-    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=[metrics.accuracy],  # Creazione del modello effettivo
+    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=["metrics.mean_squared_error"],  # Creazione del modello effettivo
 )
 
 train_graphs, test_graphs = model_selection.train_test_split(

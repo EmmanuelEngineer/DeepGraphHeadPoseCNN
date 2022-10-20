@@ -14,8 +14,6 @@ import GraphGenerator
 import ImageAnalizer
 import DataUtils
 import numpy as np
-from RegressorGenerator import networkx_list_to_pandas_list
-
 images_paths = ImageAnalizer.import_images_paths(Config.Test.image_dataset)
 point_array = ImageAnalizer.landmark_extraction(images_paths)
 custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooling}
@@ -53,8 +51,11 @@ for index, image_path in enumerate(images_paths):
     plt.imshow(image)
     plt.show()
 
-    pandas_graph_list = networkx_list_to_pandas_list([graph])
+    pandas_graph_list = DataUtils.networkx_list_to_pandas_list([graph])
     pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+    pandas_graph_list[0]["nodes"].to_csv("nodes.csv")
+    pandas_graph_list[0]["edges"].to_csv("edges.csv")
+
     stellargraph_graphs = []
     for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
         stellargraph_graphs.append(StellarGraph(
