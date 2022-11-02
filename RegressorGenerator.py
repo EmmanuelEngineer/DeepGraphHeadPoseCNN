@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 import stellargraph as sg
+from matplotlib import pyplot as plt
 from stellargraph.mapper import PaddedGraphGenerator
 from stellargraph.layer import DeepGraphCNN
 from stellargraph import StellarGraph
@@ -12,8 +13,9 @@ from sklearn import model_selection
 from tensorflow.keras import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Conv1D, MaxPool1D, Dropout, Flatten
+from tensorflow.keras.initializers import Zeros
 from keras import metrics
-
+from matplotlib import figure
 import Config
 import networkx as nx
 
@@ -34,8 +36,8 @@ for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
 print(stellargraph_graphs[0].info())
 
 generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
-layer_sizes = [32, 32, 32, 1]
-k = 35
+layer_sizes = [40, 40, 40, 1]
+k = 50
 dgcnn_model = DeepGraphCNN(  #  Rete neurale che fa da traduttore per quella successiva
     layer_sizes=layer_sizes,
     activations=["tanh", "tanh", "tanh", "tanh"],
@@ -47,24 +49,25 @@ dgcnn_model = DeepGraphCNN(  #  Rete neurale che fa da traduttore per quella suc
 
 # Rete Neurale che effettua il lavoro
 x_inp, x_out = dgcnn_model.in_out_tensors()
-x_out = Conv1D(filters=16, kernel_size=sum(layer_sizes), strides=sum(layer_sizes))(x_out)  # Filtro convoluzionale
+x_out = Conv1D(filters=18, kernel_size=sum(layer_sizes), strides=sum(layer_sizes))(x_out)  # Filtro convoluzionale
 x_out = MaxPool1D(pool_size=2)(x_out)  # https://keras.io/api/layers/pooling_layers/max_pooling1d/
 
 x_out = Conv1D(filters=32, kernel_size=5, strides=1)(x_out)
 
 x_out = Flatten()(x_out)
 
-x_out = Dense(units=128, activation="relu")(x_out)
+x_out = Dense(units=128,activation="relu")(x_out)
 x_out = Dropout(rate=0.5)(x_out)
 # Per evitare overfitting setta casualmente degli input a 0 per poi amplificarne il resto per non
 # alterare la somma degli input
+
 
 predictions = Dense(units=1)(x_out)
 
 model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
 model.compile(
-    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=[metrics.mean_squared_error],  # Creazione del modello effettivo
+    optimizer=Adam(lr=0.0001), loss='mean_absolute_error', metrics=[metrics.mean_absolute_percentage_error],  # Creazione del modello effettivo
 )
 
 train_graphs, test_graphs = model_selection.train_test_split(
@@ -93,8 +96,9 @@ epochs = 35  # ripetizioni dell'addestramento
 history = model.fit(
     train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
 )
+print(sg.utils.plot_history(history))
 
-sg.utils.plot_history(history)
+
 
 test_metrics = model.evaluate(test_gen)
 print("\nTest Set Metrics:")
