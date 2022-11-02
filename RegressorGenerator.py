@@ -59,7 +59,7 @@ x_out = Dropout(rate=0.5)(x_out)
 # Per evitare overfitting setta casualmente degli input a 0 per poi amplificarne il resto per non
 # alterare la somma degli input
 
-predictions = Dense(units=3)(x_out)
+predictions = Dense(units=1)(x_out)
 
 model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
@@ -68,7 +68,7 @@ model.compile(
 )
 
 train_graphs, test_graphs = model_selection.train_test_split(
-    pandas_oracle, train_size=0.7, test_size=None, random_state=20
+    pandas_oracle["pitch"], train_size=0.7, test_size=None, random_state=20
 )
 
 gen = PaddedGraphGenerator(graphs=stellargraph_graphs)
@@ -100,5 +100,7 @@ test_metrics = model.evaluate(test_gen)
 print("\nTest Set Metrics:")
 for name, val in zip(model.metrics_names, test_metrics):
     print("\t{}: {:0.4f}".format(name, val))
+
+print(model.predict(test_gen))
 
 model.save(Config.working_directory+"model.h5")
