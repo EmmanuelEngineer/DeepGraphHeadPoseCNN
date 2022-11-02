@@ -64,7 +64,7 @@ predictions = Dense(units=3)(x_out)
 model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
 model.compile(
-    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=["metrics.mean_squared_error"],  # Creazione del modello effettivo
+    optimizer=Adam(lr=0.0001), loss="mean_squared_error", metrics=[metrics.mean_squared_error],  # Creazione del modello effettivo
 )
 
 train_graphs, test_graphs = model_selection.train_test_split(
@@ -101,4 +101,4 @@ print("\nTest Set Metrics:")
 for name, val in zip(model.metrics_names, test_metrics):
     print("\t{}: {:0.4f}".format(name, val))
 
-model.save("model.h5")
+model.save(Config.working_directory+"model.h5")

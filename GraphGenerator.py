@@ -2,7 +2,6 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
-import pandas as pd
 
 import DataUtils
 import Config
@@ -87,5 +86,5 @@ with ProcessPoolExecutor(max_workers=Config.n_of_threads) as exe:
 end = time.time()
 print("Completed in ", end - begin)
 
-DataUtils.data_saver(Config.working_directory + "array_graph_networkx.pickle", array_of_graphs)"""
-
+DataUtils.data_saver(Config.working_directory + "array_graph_networkx.pickle", array_of_graphs)
+"""

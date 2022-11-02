@@ -24,6 +24,7 @@ except Exception as ex:
     print("No model Found")
     print(ex)
     sys.exit(0)
+print(images_paths)
 
 for index, image_path in enumerate(images_paths):
     oracle_list = ImageAnalizer.extract_oracle([image_path])

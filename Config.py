@@ -1,5 +1,5 @@
 class Test:
-    image_dataset = "/home/emmavico/Documents/Posa_Testa/Test/*"
+    image_dataset = "./Dataset/Test/Images/*"
     working_directory = "./Dataset/Test/"
 
 
@@ -7,9 +7,9 @@ class Debug:
     active = False
 
 
-image_dataset = "/home/emmavico/Documents/Posa_Testa/biwi_rgb_renamed/*/*" if not Debug.active else Test.image_dataset
+image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/*/*" if not Debug.active else Test.image_dataset
 working_directory = "./Dataset/" if not Debug.active else Test.working_directory
-n_of_threads = 2
+n_of_threads = 4
 
 
 class ImageVisualizer:
