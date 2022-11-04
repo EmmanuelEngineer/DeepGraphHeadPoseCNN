@@ -12,6 +12,8 @@ working_directory = "./Dataset/" if not Debug.active else Test.working_directory
 n_of_threads = 2
 
 
+class RegressionSetting:
+    apply_RicciCurvature = True
 class ImageVisualizer:
     edge_color = (0, 255, 0)
     edge_thickness = 1

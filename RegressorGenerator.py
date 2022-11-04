@@ -24,6 +24,9 @@ import DataUtils
 networkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
 oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
 
+if Config.RegressionSetting.apply_RicciCurvature:
+    networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
+
 pandas_oracle = pd.DataFrame.from_dict(oracle_list)
 pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
 print(pandas_oracle)
@@ -36,6 +39,7 @@ for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
 print(stellargraph_graphs[0].info())
 
 generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
+print(generator)
 layer_sizes = [40, 40, 40, 1]
 k = 50
 dgcnn_model = DeepGraphCNN(  #  Rete neurale che fa da traduttore per quella successiva

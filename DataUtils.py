@@ -4,6 +4,7 @@ import pickle
 import cv2
 import pandas as pd
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
+from GraphRicciCurvature.OllivierRicci import OllivierRicci
 
 import Config
 import networkx as nx
@@ -80,4 +81,15 @@ def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as
         edges = nx.to_pandas_edgelist(x)
         nodes = pd.DataFrame.from_dict(dict(x.nodes(data=True)), orient='index')
         output_list.append({"nodes": nodes, "edges": edges})
+    return output_list
+
+
+def apply_RicciCurvature_on_list(networkx_list):
+    output_list = []
+    for graph in networkx_list:
+        # Start a Ricci flow with Lin-Yau's probability distribution setting with 4 process.
+        orf = OllivierRicci(graph, alpha=0.5, base=1, exp_power=0, proc=Config.n_of_threads, verbose="INFO")
+        orf.compute_ricci_flow(iterations=2)
+        orf.compute_ricci_flow(iterations=50)
+        output_list.append(orf.G.copy())
     return output_list
