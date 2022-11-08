@@ -16,14 +16,15 @@ import DataUtils
 import numpy as np
 images_paths = ImageAnalizer.import_images_paths(Config.Test.image_dataset)
 point_array = ImageAnalizer.landmark_extraction(images_paths)
+"""
 custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooling}
-
 try:
     model = load_model(Config.working_directory + "model.h5", custom_objects=custom_objects)
 except Exception as ex:
     print("No model Found")
     print(ex)
     sys.exit(0)
+"""
 print(images_paths)
 
 for index, image_path in enumerate(images_paths):
@@ -46,13 +47,13 @@ for index, image_path in enumerate(images_paths):
         nodes_to_graph.append((idn, x))  # Because networkx needs the node index to work
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edge_list)
-    graph = DataUtils.apply_RicciCurvature_on_list([graph])[0]
+    #graph = DataUtils.apply_RicciCurvature_on_list([graph])[0]
     fig = plt.figure(figsize=[10, 10], dpi=300)
     plt.title("Resultant Image")
     plt.axis('off')
     plt.imshow(image)
     plt.show()
-
+"""
     pandas_graph_list = DataUtils.networkx_list_to_pandas_list([graph])
     pandas_oracle = pd.DataFrame.from_dict(oracle_list)
     pandas_graph_list[0]["nodes"].to_csv("nodes.csv")
@@ -66,3 +67,4 @@ for index, image_path in enumerate(images_paths):
     obj = test_generator.flow(stellargraph_graphs)
     predict = model.predict(obj)
     print("predicted", predict, "expected", oracle_list[0])
+    """

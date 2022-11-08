@@ -41,7 +41,7 @@ def sort(edge):
 
 def edge_list_generator(node_list):
     selected_edges = []
-    all_edges = [] # archive of all possible edges grouped by starting edge
+    all_edges = []  # archive of all possible edges grouped by starting edge
     for a_index, a_node in enumerate(node_list):
         all_edges.append([])
         for b_index, b_node in enumerate(node_list):
@@ -50,10 +50,11 @@ def edge_list_generator(node_list):
 
             all_edges[a_index].append((a_index, b_index,
                                        node_distance(node_list[a_index], node_list[b_index])))
-        all_edges[a_index].sort(key=sort) # sorts all the possible edges from a single point by eucludian distance
+        all_edges[a_index].sort(key=sort)  # sorts all the possible edges from a single point by eucludian distance
     for index in range(0, len(node_list)):
-        for edge in all_edges[index][:Config.Extraction.edges_per_landmark]: # selects the closest edges
-            if not already_taken(edge, selected_edges): # doesn't stop the counter because skips the already taken edges
+        for edge in all_edges[index][:Config.Extraction.edges_per_landmark]:  # selects the closest edges
+            if not already_taken(edge,
+                                 selected_edges):  # doesn't stop the counter because skips the already taken edges
                 selected_edges.append(edge)
 
     selected_edges1 = []
@@ -73,8 +74,8 @@ def generate_graph(element):  # elements will contain the subject number and the
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edges)
     return number, graph
-"""
 
+"""
 # Executive Code
 begin = time.time()
 array_of_graphs = []

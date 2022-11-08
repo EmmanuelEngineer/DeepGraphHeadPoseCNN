@@ -56,6 +56,8 @@ def landmark_extraction(list_of_paths):
     face_mesh_images = mp_face_mesh.FaceMesh(
         static_image_mode=Config.Extraction.static_image_mode,
         max_num_faces=Config.Extraction.max_num_faces)
+    print("number of considered landmark per face: %d" % (
+            468 - len(Config.Extraction.LandmarksToIgnore.total_landmarks)))
     for _image_path in list_of_paths:
         image = cv2.imread(_image_path)
 
@@ -72,16 +74,19 @@ def landmark_extraction(list_of_paths):
                         # Filtering landmarks
                         filtered_landmarks.append({"x": land.x, "y": land.y,
                                                    "z": land.z})  # Translating mediapipe object in a generic array
+        else:
+            print("No face found at:", _image_path)
+            exit(1)
 
         if Config.Extraction.scale_landmarks:
             filtered_landmarks = scale_landmarks(filtered_landmarks)
         extracted_landmarks.append(filtered_landmarks)
     return extracted_landmarks
-"""
+
+
 images_paths = import_images_paths(Config.image_dataset)
 oracle = extract_oracle(images_paths)
 DataUtils.data_saver(Config.working_directory + "oracle_list.pickle", oracle)
 
 landmark_array = landmark_extraction(images_paths)
 DataUtils.data_saver(Config.working_directory + "data_array.pickle", landmark_array)
-"""
