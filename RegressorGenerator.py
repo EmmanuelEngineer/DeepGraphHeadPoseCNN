@@ -25,10 +25,15 @@ import DataUtils
 import Config
 import GraphGenerator
 import ImageAnalizer
-"""
+
+
 networkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
 oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
-
+"""
+if Config.RegressionSetting.apply_RicciCurvature:
+    networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
+    DataUtils.data_saver(Config.working_directory+"RiccisCurvatureGraphs.pickle", networkx_list)
+"""
 pandas_oracle = pd.DataFrame.from_dict(oracle_list)
 pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
 print(pandas_oracle)
@@ -40,16 +45,14 @@ for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
 
 
 DataUtils.data_saver(Config.working_directory + "stellargraph_graph.pickle", stellargraph_graphs)
-"""
+
 
 print(torch.version.cuda)
-oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
 pandas_oracle = pd.DataFrame.from_dict(oracle_list)
-stellargraph_graphs = DataUtils.data_loader(Config.working_directory + "stellargraph_graph.pickle")
 print(stellargraph_graphs[0].info())
 generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
-layer_sizes = [500, 500, 500, 1]
-k = 80
+layer_sizes = [50, 50, 50, 1]
+k = 50
 dgcnn_model = DeepGraphCNN(  # Rete neurale che fa da traduttore per quella successiva
     layer_sizes=layer_sizes,
     activations=["tanh", "tanh", "tanh", "tanh"],
@@ -69,6 +72,8 @@ x_out = Conv1D(filters=32, kernel_size=10, strides=1)(x_out)
 x_out = Flatten()(x_out)
 
 x_out = Dense(units=204, activation="tanh")(x_out)
+x_out = Dense(units=204, activation="tanh")(x_out)
+
 x_out = Dropout(rate=0.5)(x_out)
 # Per evitare overfitting setta casualmente degli input a 0 per poi amplificarne il resto per non
 # alterare la somma degli input
@@ -79,7 +84,7 @@ predictions = Dense(units=1)(x_out)
 model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
 model.compile(
-    optimizer=Adam(lr=0.001), loss='mean_absolute_error', metrics=[metrics.mean_absolute_percentage_error],
+    optimizer=Adam(lr=0.001), loss='mean_squared_error', metrics=[metrics.mean_squared_error],
     # Creazione del modello effettivo
 )
 
@@ -104,7 +109,7 @@ test_gen = gen.flow(  # dati per il test
     symmetric_normalization=False,
 )
 
-epochs = 100  # ripetizioni dell'addestramento
+epochs = 200  # ripetizioni dell'addestramento
 
 history = model.fit(
     train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,

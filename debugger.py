@@ -46,6 +46,7 @@ for index, image_path in enumerate(images_paths):
         nodes_to_graph.append((idn, x))  # Because networkx needs the node index to work
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edge_list)
+    graph = DataUtils.apply_RicciCurvature_on_list([graph])[0]
     fig = plt.figure(figsize=[10, 10], dpi=300)
     plt.title("Resultant Image")
     plt.axis('off')

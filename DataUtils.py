@@ -16,6 +16,9 @@ import dataclasses
 import matplotlib.pyplot as plt
 import numpy as np
 
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
+
 
 def draw_edges(image, landmark_list, edges):
     image_rows, image_cols, _ = image.shape
@@ -59,6 +62,7 @@ def draw_landmarks(image, landmark_list, original):
 
 
 def data_saver(location, data_to_save):
+    print("saving: ", location)
     try:
         with open(location, "wb") as d:
             pickle.dump(data_to_save, d)
@@ -67,11 +71,12 @@ def data_saver(location, data_to_save):
 
 
 def data_loader(path):
+    print("loading: ", path)
     try:
         with open(path, "rb") as df:
             data = pickle.load(df)
     except Exception as ex:
-        print("Cannot load data" + ex)
+        print("Cannot load data", ex)
     return data
 
 
@@ -86,10 +91,11 @@ def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as
 
 def apply_RicciCurvature_on_list(networkx_list):
     output_list = []
+    counter = 0
     for graph in networkx_list:
-        # Start a Ricci flow with Lin-Yau's probability distribution setting with 4 process.
-        orf = OllivierRicci(graph, alpha=0.5, base=1, exp_power=0, proc=Config.n_of_threads, verbose="INFO")
-        orf.compute_ricci_flow(iterations=2)
-        orf.compute_ricci_flow(iterations=50)
+        counter += 1
+        print(counter, "on", len(networkx_list))
+        orf = OllivierRicci(graph, alpha=0.5, base=1, exp_power=0, proc=1, verbose="INFO")
+        orf.compute_ricci_flow(iterations=10)
         output_list.append(orf.G.copy())
     return output_list
