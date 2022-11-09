@@ -1,4 +1,5 @@
 import cv2
+import keras.layers
 import pandas as pd
 import pandas as pd
 import numpy as np
@@ -61,8 +62,18 @@ if __name__ == "__main__":
         generator=generator,
     )
 
+    dgcnn_model2 = DeepGraphCNN(  # Rete neurale che fa da traduttore per quella successiva
+        layer_sizes=layer_sizes,
+        activations=["tanh", "tanh", "tanh", "tanh"],
+        # attivazioni applicate all'output del layer: Fare riferimento a https://keras.io/api/layers/activations/
+        k=k,  # numero di tensori in output
+        bias=False,
+        generator=generator,
+    )
+    x_inp2, x_out2 = dgcnn_model2.in_out_tensors()
     # Rete Neurale che effettua il lavoro
     x_inp, x_out = dgcnn_model.in_out_tensors()
+    x_out = keras.layers.add(x_out, x_out2)
     x_out = Conv1D(filters=18, kernel_size=sum(layer_sizes), strides=sum(layer_sizes))(x_out)  # Filtro convoluzionale
     x_out = MaxPool1D(pool_size=2)(x_out)  # https://keras.io/api/layers/pooling_layers/max_pooling1d/
 
@@ -80,7 +91,7 @@ if __name__ == "__main__":
 
     predictions = Dense(units=1)(x_out)
 
-    model = Model(inputs=x_inp, outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
+    model = Model(inputs=[x_inp,x_inp2], outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
 
     model.compile(
         optimizer=Adam(lr=0.001), loss='mean_squared_error', metrics=[metrics.mean_squared_error],

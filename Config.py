@@ -13,7 +13,7 @@ n_of_threads = 2
 
 
 class RegressionSetting:
-    apply_RicciCurvature = True
+    apply_RicciCurvature = False
 
 
 class ImageVisualizer:
@@ -62,7 +62,7 @@ class Extraction:
                 412, 351, 465, 417, 438, 166]
         extra = [266, 329, 36, 100, 213, 101, 50, 371, 330, 280,
 
-                 349, 347, 340, 376, 433, 264,120,35,117,215
+                 349, 347, 340, 376, 433, 264, 120, 35, 117, 215
                  ]
 
         total_landmarks = left_eye + right_eye + mouth + jaw + nose + extra
