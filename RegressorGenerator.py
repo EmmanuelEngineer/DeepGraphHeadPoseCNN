@@ -34,8 +34,20 @@ if __name__ == "__main__":
     if Config.RegressionSetting.apply_RicciCurvature:
         networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
         DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", networkx_list)
-    if False:
+    if True:
         pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+        for x in networkx_list:
+            to_delete = []
+            to_set = []
+            for edge in x.edges.data("weight"):
+                if edge[2]>0.5:
+                    to_set.append((edge[0], edge[1]))
+                else:
+                    to_delete.append((edge[0], edge[1]))
+            for y in to_set:
+                nx.set_edge_attributes(x, {y: {"weight": 1}})
+            x.remove_edges_from(to_delete)
+
         pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
         print(pandas_oracle)
 
