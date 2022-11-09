@@ -43,14 +43,15 @@ def extract_oracle(paths_of_images):
 def scale_landmarks(list_of_landmarks):
     dataframe = pd.DataFrame.from_records(list_of_landmarks)
     scaler = MinMaxScaler()
-    scaler.fit(dataframe, dataframe.columns)
-    d = scaler.transform(numpy.array(dataframe))
+    scaler.fit(dataframe)
+    d = scaler.transform(dataframe)
     dataframe = pd.DataFrame(d, columns=dataframe.columns)
     return dataframe.to_dict("records")
 
 
 def landmark_extraction(list_of_paths):
     extracted_landmarks = []
+    no_face_at = []
     #   setting up the extractor
     mp_face_mesh = mp.solutions.face_mesh
     face_mesh_images = mp_face_mesh.FaceMesh(
@@ -58,7 +59,7 @@ def landmark_extraction(list_of_paths):
         max_num_faces=Config.Extraction.max_num_faces)
     print("number of considered landmark per face: %d" % (
             468 - len(Config.Extraction.LandmarksToIgnore.total_landmarks)))
-    for _image_path in list_of_paths:
+    for id_im, _image_path in enumerate(list_of_paths):
         image = cv2.imread(_image_path)
 
         # Extraction
@@ -76,17 +77,19 @@ def landmark_extraction(list_of_paths):
                                                    "z": land.z})  # Translating mediapipe object in a generic array
         else:
             print("No face found at:", _image_path)
-            exit(1)
+            no_face_at.append(id_im)
 
         if Config.Extraction.scale_landmarks:
             filtered_landmarks = scale_landmarks(filtered_landmarks)
         extracted_landmarks.append(filtered_landmarks)
-    return extracted_landmarks
+    return extracted_landmarks, no_face_at
 
 
-images_paths = import_images_paths(Config.image_dataset)
-oracle = extract_oracle(images_paths)
-DataUtils.data_saver(Config.working_directory + "oracle_list.pickle", oracle)
-
-landmark_array = landmark_extraction(images_paths)
-DataUtils.data_saver(Config.working_directory + "data_array.pickle", landmark_array)
+if __name__ == "__main__":
+    images_paths = import_images_paths(Config.image_dataset)
+    oracle = extract_oracle(images_paths)
+    landmark_array, id_to_exclude = landmark_extraction(images_paths)
+    print("Total faces non found: ", len(id_to_exclude))
+    oracle = [ele for idx, ele in enumerate(oracle) if idx not in id_to_exclude]
+    DataUtils.data_saver(Config.working_directory + "oracle_list.pickle", oracle)
+    DataUtils.data_saver(Config.working_directory + "data_array.pickle", landmark_array)

@@ -14,9 +14,10 @@ import GraphGenerator
 import ImageAnalizer
 import DataUtils
 import numpy as np
+
 images_paths = ImageAnalizer.import_images_paths(Config.Test.image_dataset)
-point_array = ImageAnalizer.landmark_extraction(images_paths)
-"""
+point_array, x = ImageAnalizer.landmark_extraction(images_paths)
+
 custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooling}
 try:
     model = load_model(Config.working_directory + "model.h5", custom_objects=custom_objects)
@@ -24,8 +25,10 @@ except Exception as ex:
     print("No model Found")
     print(ex)
     sys.exit(0)
-"""
+
 print(images_paths)
+
+model.summary()
 
 for index, image_path in enumerate(images_paths):
     oracle_list = ImageAnalizer.extract_oracle([image_path])
@@ -53,7 +56,7 @@ for index, image_path in enumerate(images_paths):
     plt.axis('off')
     plt.imshow(image)
     plt.show()
-"""
+
     pandas_graph_list = DataUtils.networkx_list_to_pandas_list([graph])
     pandas_oracle = pd.DataFrame.from_dict(oracle_list)
     pandas_graph_list[0]["nodes"].to_csv("nodes.csv")
@@ -67,4 +70,4 @@ for index, image_path in enumerate(images_paths):
     obj = test_generator.flow(stellargraph_graphs)
     predict = model.predict(obj)
     print("predicted", predict, "expected", oracle_list[0])
-    """
+

@@ -4,7 +4,7 @@ class Test:
 
 
 class Debug:
-    active = True
+    active = False
 
 
 image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/*/*" if not Debug.active else Test.image_dataset
@@ -60,6 +60,9 @@ class Extraction:
                 439, 455, 94, 19,
                 294, 278, 344, 440, 275, 281, 363, 360, 279, 331, 358, 429, 420, 456, 248, 419, 399, 437, 355, 277, 343,
                 412, 351, 465, 417, 438, 166]
-        extra = [266, 329, 36, 100, 213, 101, 50, 371, 330, 280]
+        extra = [266, 329, 36, 100, 213, 101, 50, 371, 330, 280,
+
+                 349, 347, 340, 376, 433, 264,120,35,117,215
+                 ]
 
         total_landmarks = left_eye + right_eye + mouth + jaw + nose + extra

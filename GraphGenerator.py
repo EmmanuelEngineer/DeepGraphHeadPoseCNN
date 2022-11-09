@@ -75,17 +75,17 @@ def generate_graph(element):  # elements will contain the subject number and the
     graph.add_edges_from(edges)
     return number, graph
 
-"""
-# Executive Code
-begin = time.time()
-array_of_graphs = []
-with ProcessPoolExecutor(max_workers=Config.n_of_threads) as exe:
-    iterable_of_graphs = exe.map(generate_graph, enumerate(data))
-    for subject_number, i in iterable_of_graphs:
-        print(f"{subject_number} on {len(data)} complete.")
-        array_of_graphs.append(i)
-end = time.time()
-print("Completed in ", end - begin)
 
-DataUtils.data_saver(Config.working_directory + "array_graph_networkx.pickle", array_of_graphs)
-"""
+if __name__ == "__main__":
+    # Executive Code
+    begin = time.time()
+    array_of_graphs = []
+    with ProcessPoolExecutor(max_workers=Config.n_of_threads) as exe:
+        iterable_of_graphs = exe.map(generate_graph, enumerate(data))
+        for subject_number, i in iterable_of_graphs:
+            print(f"{subject_number} on {len(data)} complete.")
+            array_of_graphs.append(i)
+    end = time.time()
+    print("Completed in ", end - begin)
+
+    DataUtils.data_saver(Config.working_directory + "array_graph_networkx.pickle", array_of_graphs)
