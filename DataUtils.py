@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import logging
+
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
 
 
@@ -97,5 +98,13 @@ def apply_RicciCurvature_on_list(networkx_list):
         print(counter, "on", len(networkx_list))
         orf = OllivierRicci(graph, alpha=0.5, base=1, exp_power=0, proc=1, verbose="INFO")
         orf.compute_ricci_flow(iterations=10)
+
+        for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+            for att in ["weight", "original_RC"]:
+                d.pop(att, None)
+
+        for n1, d in graph.nodes(data=True):
+            d.pop("ricciCurvature", None)
         output_list.append(orf.G.copy())
+
     return output_list
