@@ -9,11 +9,11 @@ class Debug:
 
 image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/*/*" if not Debug.active else Test.image_dataset
 working_directory = "./Dataset/" if not Debug.active else Test.working_directory
-n_of_threads = 2
+n_of_threads = 4
 
 
 class RegressionSetting:
-    apply_RicciCurvature = False
+    apply_RicciCurvature = True
 
 
 class ImageVisualizer:

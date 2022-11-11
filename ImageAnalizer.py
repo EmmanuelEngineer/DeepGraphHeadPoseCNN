@@ -78,6 +78,7 @@ def landmark_extraction(list_of_paths):
         else:
             print("No face found at:", _image_path)
             no_face_at.append(id_im)
+            continue
 
         if Config.Extraction.scale_landmarks:
             filtered_landmarks = scale_landmarks(filtered_landmarks)

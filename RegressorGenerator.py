@@ -18,6 +18,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Conv1D, MaxPool1D, Dropout, Flatten
 from tensorflow.keras.initializers import Zeros
 from keras import metrics
+from sklearn.preprocessing import MinMaxScaler
+
 from matplotlib import figure
 import Config
 import networkx as nx
@@ -30,44 +32,52 @@ import ImageAnalizer
 if __name__ == "__main__":
     networkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
     oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
+    pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+    pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
 
-    if Config.RegressionSetting.apply_RicciCurvature:
-        networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
-        DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", networkx_list)
-    if True:
-        pandas_oracle = pd.DataFrame.from_dict(oracle_list)
-        for x in networkx_list:
-            to_delete = []
-            to_set = []
-            for edge in x.edges.data("weight"):
-                if edge[2]>0.5:
-                    to_set.append((edge[0], edge[1]))
-                else:
-                    to_delete.append((edge[0], edge[1]))
-            for y in to_set:
-                nx.set_edge_attributes(x, {y: {"weight": 1}})
-            x.remove_edges_from(to_delete)
+    if False:
+        if Config.RegressionSetting.apply_RicciCurvature:
+            networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
+            DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", networkx_list)
 
-        pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
+        ricci_networkx_list = DataUtils.data_loader(Config.working_directory + "RiccisCurvatureGraphs.pickle")
+
         print(pandas_oracle)
+        for graph in ricci_networkx_list:
+            for n1, n2, d in graph.edges(data=True):
+                for att in ["weight", "original_RC"]:
+                    d.pop(att, None)
 
-        stellargraph_graphs = []
-        for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
-            stellargraph_graphs.append(StellarGraph(
-                {"landmark": graph["nodes"]}, {"line": graph["edges"]}))
+            for n1, d in graph.nodes(data=True):
+                d.pop("ricciCurvature", None)
 
-        DataUtils.data_saver(Config.working_directory + "stellargraph_graph.pickle", stellargraph_graphs)
+    ##
+    stellargraph_graphs = []
+    for graph in pandas_graph_list:  # Conversion to stellargraph Graphs
+        stellargraph_graphs.append(StellarGraph(
+            {"landmark": graph["nodes"]}, {"line": graph["edges"]}))
+
+    DataUtils.data_saver(Config.working_directory + "stellargraph_graph.pickle", stellargraph_graphs)
+    ##
 
     stellargraph_graphs = DataUtils.data_loader(Config.working_directory + "stellargraph_graph.pickle")
     print(torch.version.cuda)
+    # Scaling oracle
     pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+
+    scaler = MinMaxScaler()
+    scaler.fit(pandas_oracle)
+    d = scaler.transform(pandas_oracle)
+    pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
+    DataUtils.data_saver(Config.working_directory + "minmaxscaled_oracle.pickle", pandas_oracle)
+
     print(stellargraph_graphs[0].info())
     generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
-    layer_sizes = [150, 150, 150 , 150, 1]
+    layer_sizes = [150, 150, 150, 150, 150, 150, 1]
     k = 35
     dgcnn_model = DeepGraphCNN(  # Rete neurale che fa da traduttore per quella successiva
         layer_sizes=layer_sizes,
-        activations=["tanh", "tanh", "tanh", "tanh", "tanh"],
+        activations=["tanh", "tanh", "tanh", "tanh", "tanh", "tanh", "tanh"],
         # attivazioni applicate all'output del layer: Fare riferimento a https://keras.io/api/layers/activations/
         k=k,  # numero di tensori in output
         bias=False,
@@ -125,8 +135,12 @@ if __name__ == "__main__":
     history = model.fit(
         train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
     )
+    model.save(Config.working_directory + "model.h5")
 
     print(sg.utils.plot_history(history))
+    image = np.zeros((1000, 1000, 3), dtype="uint8")
+    plt.imshow(image)
+    plt.show()
 
     test_metrics = model.evaluate(test_gen)
     print("\nTest Set Metrics:")
@@ -134,4 +148,3 @@ if __name__ == "__main__":
         print("\t{}: {:0.4f}".format(name, val))
 
     print(model.predict(test_gen))
-    model.save(Config.working_directory + "model.h5")

@@ -5,6 +5,7 @@ import networkx as nx
 import pandas as pd
 from keras.saving.save import load_model
 from matplotlib import pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 from stellargraph import StellarGraph
 from stellargraph.layer import GraphConvolution, SortPooling
 from stellargraph.mapper import PaddedGraphGenerator
@@ -50,7 +51,18 @@ for index, image_path in enumerate(images_paths):
         nodes_to_graph.append((idn, x))  # Because networkx needs the node index to work
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edge_list)
-    #graph = DataUtils.apply_RicciCurvature_on_list([graph])[0]
+    if False:
+        graph = DataUtils.apply_RicciCurvature_on_list([graph])[0]
+
+        for n1, n2, d in graph.edges(data=True):
+            for att in ["weight", "original_RC"]:
+                d.pop(att, None)
+
+        for n1,  d in graph.nodes(data=True):
+           d.pop("ricciCurvature", None)
+
+    print(graph.nodes(data = True))
+    print(graph.edges(data = True))
     fig = plt.figure(figsize=[10, 10], dpi=300)
     plt.title("Resultant Image")
     plt.axis('off')
@@ -59,6 +71,8 @@ for index, image_path in enumerate(images_paths):
 
     pandas_graph_list = DataUtils.networkx_list_to_pandas_list([graph])
     pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+    result_scaler = MinMaxScaler().fit(pandas_oracle)
+
     pandas_graph_list[0]["nodes"].to_csv("nodes.csv")
     pandas_graph_list[0]["edges"].to_csv("edges.csv")
 
@@ -69,5 +83,7 @@ for index, image_path in enumerate(images_paths):
     test_generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
     obj = test_generator.flow(stellargraph_graphs)
     predict = model.predict(obj)
+    print("no Scaling", predict)
+    predict = result_scaler.inverse_transform(predict)
     print("predicted", predict, "expected", oracle_list[0])
 
