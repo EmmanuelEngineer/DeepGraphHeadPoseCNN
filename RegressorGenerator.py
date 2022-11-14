@@ -40,11 +40,11 @@ def convert_pandas_graph_list_to_stellargraph(nx_list):
 
 def generate_model(graphs, oracle):
     generator = PaddedGraphGenerator(graphs=graphs)
-    layer_sizes = [150, 150, 150, 150, 150, 150, 1]
+    layer_sizes = [75, 75, 1]
     k = 35
     dgcnn_model = DeepGraphCNN(  # Rete neurale che fa da traduttore per quella successiva
         layer_sizes=layer_sizes,
-        activations=["tanh", "tanh", "tanh", "tanh", "tanh", "tanh", "tanh"],
+        activations=["tanh", "tanh", "tanh"],
         # attivazioni applicate all'output del layer: Fare riferimento a https://keras.io/api/layers/activations/
         k=k,  # numero di tensori in output
         bias=False,
@@ -82,7 +82,6 @@ def generate_model(graphs, oracle):
 
     gen = PaddedGraphGenerator(graphs=graphs)
 
-    print(train_graphs)
     train_gen = gen.flow(  # dati per l'addestramento
         list(train_graphs.index - 1),
         targets=train_graphs.values,
@@ -97,7 +96,7 @@ def generate_model(graphs, oracle):
         symmetric_normalization=False,
     )
 
-    epochs = 200  # ripetizioni dell'addestramento
+    epochs = 100  # ripetizioni dell'addestramento
 
     history = model.fit(
         train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
@@ -118,15 +117,15 @@ if __name__ == "__main__":
         networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
         DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", networkx_list)
 
-    DataUtils.data_loader(Config.working_directory + "RiccisCurvatureGraphs.pickle", networkx_list)
-    for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
-        for att in ["weight", "original_RC"]:
-            d.pop(att, None)
+    networkx_list = DataUtils.data_loader(Config.working_directory + "RiccisCurvatureGraphs.pickle")
+    for graph in networkx_list:
+        for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+            for att in ["weight", "original_RC"]:
+                d.pop(att, None)
 
-    for n1, d in graph.nodes(data=True):
-        for att in ["x", "y", "z"]:
-            d.pop(att, None)
-    output_list.append(orf.G.copy())
+        for n1, d in graph.nodes(data=True):
+            for att in ["x", "y", "z"]:
+                d.pop(att, None)
     pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
     stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
     print(stellargraph_graphs[0].info())
@@ -140,9 +139,7 @@ if __name__ == "__main__":
 
     model, history = generate_model(stellargraph_graphs, pandas_oracle)
     model.save(Config.working_directory + "model.h5")
-    DataUtils.data_saver(Config.working_directory+"model_history.pickle")
+    DataUtils.data_saver(Config.working_directory+"model_history.pickle", history)
 
-    print(sg.utils.plot_history(history))
-    image = np.zeros((1000, 1000, 3), dtype="uint8")
-    plt.imshow(image)
-    plt.show()
+    sg.utils.plot_history(history, return_figure=True).show()
+

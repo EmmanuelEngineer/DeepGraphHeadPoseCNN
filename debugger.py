@@ -51,18 +51,19 @@ for index, image_path in enumerate(images_paths):
         nodes_to_graph.append((idn, x))  # Because networkx needs the node index to work
     graph.add_nodes_from(nodes_to_graph)
     graph.add_edges_from(edge_list)
-    if False:
+    if True:
         graph = DataUtils.apply_RicciCurvature_on_list([graph])[0]
 
-        for n1, n2, d in graph.edges(data=True):
+        for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
             for att in ["weight", "original_RC"]:
                 d.pop(att, None)
 
-        for n1,  d in graph.nodes(data=True):
-           d.pop("ricciCurvature", None)
+        for n1, d in graph.nodes(data=True):
+            for att in ["x", "y", "z"]:
+                d.pop(att, None)
 
-    print(graph.nodes(data = True))
-    print(graph.edges(data = True))
+    print(graph.nodes(data=True))
+    print(graph.edges(data=True))
     fig = plt.figure(figsize=[10, 10], dpi=300)
     plt.title("Resultant Image")
     plt.axis('off')
@@ -86,4 +87,3 @@ for index, image_path in enumerate(images_paths):
     print("no Scaling", predict)
     predict = result_scaler.inverse_transform(predict)
     print("predicted", predict, "expected", oracle_list[0])
-
