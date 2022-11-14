@@ -1,3 +1,4 @@
+import os
 import pickle
 import cv2
 import mediapipe as mp
@@ -19,8 +20,15 @@ import DataUtils
 def import_images_paths(dataset_directory):
     import glob
 
-    list_of_paths = glob.glob(dataset_directory)
-    return list_of_paths
+    array_of_directories = [Config.image_dataset + name + "/*" for name in os.listdir(Config.image_dataset)
+                            if os.path.isdir(os.path.join(Config.image_dataset, name))]
+
+    print(array_of_directories)
+    array_of_glob = []
+    for x in array_of_directories:
+        array_of_glob.append(glob.glob(x))
+
+    return array_of_glob
 
 
 def extract_oracle(paths_of_images):
@@ -87,10 +95,20 @@ def landmark_extraction(list_of_paths):
 
 
 if __name__ == "__main__":
-    images_paths = import_images_paths(Config.image_dataset)
-    oracle = extract_oracle(images_paths)
-    landmark_array, id_to_exclude = landmark_extraction(images_paths)
-    print("Total faces non found: ", len(id_to_exclude))
-    oracle = [ele for idx, ele in enumerate(oracle) if idx not in id_to_exclude]
-    DataUtils.data_saver(Config.working_directory + "oracle_list.pickle", oracle)
-    DataUtils.data_saver(Config.working_directory + "data_array.pickle", landmark_array)
+    images_paths_all_subjects = import_images_paths(Config.image_dataset)
+    oracle_all_subjects = extract_oracle(images_paths_all_subjects)
+    id_to_exclude = []
+    landmark_array_all_subjects = []
+    for subject_id, subject_images in enumerate(images_paths_all_subjects):
+        landmark_array_of_subjects, id_to_exclude_of_subjects = landmark_extraction(subject_images)
+        print("Total faces non found: ", len(id_to_exclude))
+        oracle = [ele for idx, ele in enumerate(oracle_all_subjects[subject_id]) if idx not in id_to_exclude]
+        landmark_array_all_subjects.append(landmark_array_of_subjects)
+
+    DataUtils.data_saver(Config.working_directory+"landmarks_by_subject.pickle", landmark_array_all_subjects)
+    DataUtils.data_saver(Config.working_directory+"oracle_by_subject.pickle", landmark_array_all_subjects)
+
+    for x in landmark_array_all_subjects:
+        print(len(landmark_array_all_subjects))
+
+
