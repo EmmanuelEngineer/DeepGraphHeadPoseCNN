@@ -96,19 +96,15 @@ def landmark_extraction(list_of_paths):
 
 if __name__ == "__main__":
     images_paths_all_subjects = import_images_paths(Config.image_dataset)
-    oracle_all_subjects = extract_oracle(images_paths_all_subjects)
+    oracle_all_subjects = []
     id_to_exclude = []
     landmark_array_all_subjects = []
     for subject_id, subject_images in enumerate(images_paths_all_subjects):
+        subject_oracle = extract_oracle(subject_images)
         landmark_array_of_subjects, id_to_exclude_of_subjects = landmark_extraction(subject_images)
         print("Total faces non found: ", len(id_to_exclude))
-        oracle = [ele for idx, ele in enumerate(oracle_all_subjects[subject_id]) if idx not in id_to_exclude]
+        oracle_all_subjects.append([ele for idx, ele in enumerate(oracle_all_subjects[subject_id]) if idx not in id_to_exclude])
         landmark_array_all_subjects.append(landmark_array_of_subjects)
 
     DataUtils.data_saver(Config.working_directory+"landmarks_by_subject.pickle", landmark_array_all_subjects)
-    DataUtils.data_saver(Config.working_directory+"oracle_by_subject.pickle", landmark_array_all_subjects)
-
-    for x in landmark_array_all_subjects:
-        print(len(landmark_array_all_subjects))
-
-
+    DataUtils.data_saver(Config.working_directory+"oracle_by_subject.pickle", oracle_all_subjects)

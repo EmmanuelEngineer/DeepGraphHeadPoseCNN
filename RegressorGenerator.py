@@ -109,37 +109,56 @@ def generate_model(graphs, oracle):
 
 
 if __name__ == "__main__":
-    networkx_list = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
-    oracle_list = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
-    pandas_oracle = pd.DataFrame.from_dict(oracle_list)
-
+    networkx_list_by_subject = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
+    oracle_list_by_subject = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
     if False:#Config.RegressionSetting.apply_RicciCurvature:
-        networkx_list = DataUtils.apply_RicciCurvature_on_list(networkx_list)
-        DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", networkx_list)
+        networkx_list_by_subject = DataUtils.apply_RicciCurvature_on_list(training_set)
+        DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", training_set)
 
-    networkx_list = DataUtils.data_loader(Config.working_directory + "RiccisCurvatureGraphs.pickle")
-    for graph in networkx_list:
-        for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
-            for att in ["weight", "original_RC"]:
-                d.pop(att, None)
+    if Config.RegressionSetting.apply_RicciCurvature:
+        for graph in training_set:
+            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+                for att in ["weight", "original_RC"]:
+                    d.pop(att, None)
 
-        for n1, d in graph.nodes(data=True):
-            for att in ["x", "y", "z"]:
-                d.pop(att, None)
-    pandas_graph_list = DataUtils.networkx_list_to_pandas_list(networkx_list)
-    stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
-    print(stellargraph_graphs[0].info())
-    DataUtils.data_saver(Config.working_directory + "stellargraph_graph.pickle", stellargraph_graphs)
-    pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+            for n1, d in graph.nodes(data=True):
+                for att in ["x", "y", "z"]:
+                    d.pop(att, None)
+    else:
+        for graph in training_set:
+            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+                for att in ["ricciCurvature", "original_RC"]:
+                    d.pop(att, None)
 
-    scaler = MinMaxScaler()  # Scaling oracle
-    scaler.fit(pandas_oracle)
-    d = scaler.transform(pandas_oracle)
-    pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
+            for n1, d in graph.nodes(data=True):
+                for att in ["ricciCurvature"]:
+                    d.pop(att, None)
 
-    model, history = generate_model(stellargraph_graphs, pandas_oracle)
-    model.save(Config.working_directory + "model.h5")
-    DataUtils.data_saver(Config.working_directory+"model_history.pickle", history)
+    all_networkx_list = DataUtils.data_loader(Config.working_directory + "RiccisCurvatureGraphs.pickle")
+    for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(all_networkx_list):
+        training_set = []
+        oracle_list = []
+        for x in [x for idx, x in enumerate(all_networkx_list) if idx != excluded_subject_id]:
+            for y in x:
+                training_set.append(y)
 
-    sg.utils.plot_history(history, return_figure=True).show()
+        for x in [x for idx, x in enumerate(oracle_list_by_subject) if idx != excluded_subject_id]:
+            for y in x:
+                oracle_list.append(y)
 
+        pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
+        stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
+        print(stellargraph_graphs[0].info())
+        pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+
+        scaler = MinMaxScaler()  # Scaling oracle
+        scaler.fit(pandas_oracle)
+        d = scaler.transform(pandas_oracle)
+        pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
+
+        model, history = generate_model(stellargraph_graphs, pandas_oracle)
+        name_file_identifier ="no_".join(excluded_subject_id).join("_") if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_".join(excluded_subject_id).join("_")
+
+        model.save(Config.working_directory +"/models/"+ name_file_identifier +"model.h5")
+        DataUtils.data_saver(Config.working_directory+"/histories/"+name_file_identifier+"model_history.pickle", history)
+        DataUtils.data_saver(Config.working_directory+"/scalers/"+name_file_identifier+"result_scaler.pickle", scaler)
