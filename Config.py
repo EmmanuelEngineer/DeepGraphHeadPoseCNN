@@ -1,6 +1,6 @@
 class Test:
-    image_dataset = "./Dataset/Test/Images/*"
-    working_directory = "./Dataset/Test/"
+    image_dataset = "./workingdirectory/Test/Images/*"
+    working_directory = "./workingdirectory/Test/"
 
 
 class Debug:
