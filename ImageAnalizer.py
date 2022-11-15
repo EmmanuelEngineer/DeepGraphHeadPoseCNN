@@ -102,8 +102,8 @@ if __name__ == "__main__":
     for subject_id, subject_images in enumerate(images_paths_all_subjects):
         subject_oracle = extract_oracle(subject_images)
         landmark_array_of_subjects, id_to_exclude_of_subjects = landmark_extraction(subject_images)
-        print("Total faces non found: ", len(id_to_exclude))
-        oracle_all_subjects.append([ele for idx, ele in enumerate(oracle_all_subjects[subject_id]) if idx not in id_to_exclude])
+        print("Total faces non found: ", len(id_to_exclude_of_subjects))
+        oracle_all_subjects.append([ele for idx, ele in enumerate(subject_oracle) if idx not in id_to_exclude_of_subjects])
         landmark_array_all_subjects.append(landmark_array_of_subjects)
 
     DataUtils.data_saver(Config.working_directory+"landmarks_by_subject.pickle", landmark_array_all_subjects)

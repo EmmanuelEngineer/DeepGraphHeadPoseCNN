@@ -32,13 +32,13 @@ import ImageAnalizer
 
 def convert_pandas_graph_list_to_stellargraph(nx_list):
     sg_graphs = []
-    for graph in nx_list:  # Conversion to stellargraph Graphs
+    for idx, graph_nx in enumerate(nx_list):  # Conversion to stellargraph Graphs
         sg_graphs.append(StellarGraph(
-            {"landmark": graph["nodes"]}, {"line": graph["edges"]}))
+            {"landmark": graph_nx["nodes"]}, {"line": graph_nx["edges"]}))
     return sg_graphs
 
 
-def generate_model(graphs, oracle):
+def generate_model(graphs, oracle, testing_graphs, testing_oracle):
     generator = PaddedGraphGenerator(graphs=graphs)
     layer_sizes = [75, 75, 1]
     k = 35
@@ -68,74 +68,80 @@ def generate_model(graphs, oracle):
 
     predictions = Dense(units=3)(x_out)
 
-    model = Model(inputs=x_inp,
-                  outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
-    model.summary()
-    model.compile(
+    model_to_fit = Model(inputs=x_inp,
+                         outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
+    model_to_fit.summary()
+    model_to_fit.compile(
         optimizer=Adam(lr=0.001), loss='mean_squared_error', metrics=[metrics.mean_squared_error],
         # Creazione del modello effettivo
     )
 
-    train_graphs, test_graphs = model_selection.train_test_split(
-        oracle, train_size=0.7, test_size=None, random_state=20
-    )
+
+
 
     gen = PaddedGraphGenerator(graphs=graphs)
 
     train_gen = gen.flow(  # dati per l'addestramento
-        list(train_graphs.index - 1),
-        targets=train_graphs.values,
+        range(len(training_set)),
+        targets=oracle,
         batch_size=40,
         symmetric_normalization=False,
     )
-
+    gen = PaddedGraphGenerator(graphs=testing_graphs)
     test_gen = gen.flow(  # dati per il test
-        list(test_graphs.index - 1),
-        targets=test_graphs.values,
+        range(len(testing_graphs)),
+        targets=testing_oracle,
         batch_size=1,
         symmetric_normalization=False,
     )
 
     epochs = 100  # ripetizioni dell'addestramento
 
-    history = model.fit(
+    history_internal = model_to_fit.fit(
         train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
     )
-    test_metrics = model.evaluate(test_gen)
+    test_metrics = model_to_fit.evaluate(test_gen)
     print("\nTest Set Metrics:")
-    for name, val in zip(model.metrics_names, test_metrics):
+    for name, val in zip(model_to_fit.metrics_names, test_metrics):
         print("\t{}: {:0.4f}".format(name, val))
-    return model, history
+
+    return model_to_fit, history_internal
 
 
 if __name__ == "__main__":
     networkx_list_by_subject = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
-    oracle_list_by_subject = DataUtils.data_loader(Config.working_directory + "oracle_list.pickle")
-    if False:#Config.RegressionSetting.apply_RicciCurvature:
+    oracle_list_by_subject = DataUtils.data_loader(Config.working_directory + "oracle_by_subject.pickle")
+    if False:  # Config.RegressionSetting.apply_RicciCurvature:
         networkx_list_by_subject = DataUtils.apply_RicciCurvature_on_list(training_set)
-        DataUtils.data_saver(Config.working_directory + "RiccisCurvatureGraphs.pickle", training_set)
+        DataUtils.data_saver(Config.working_directory + "oracle_by_subject.pickle", training_set)
 
-    if Config.RegressionSetting.apply_RicciCurvature:
-        for graph in training_set:
-            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
-                for att in ["weight", "original_RC"]:
-                    d.pop(att, None)
+    all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_by_subject_corrected.pickle")
 
-            for n1, d in graph.nodes(data=True):
-                for att in ["x", "y", "z"]:
-                    d.pop(att, None)
-    else:
-        for graph in training_set:
-            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
-                for att in ["ricciCurvature", "original_RC"]:
-                    d.pop(att, None)
+    for training_set in all_networkx_list:
+        if Config.RegressionSetting.apply_RicciCurvature:
+            for graph in training_set:
+                for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+                    for att in ["weight", "original_RC"]:
+                        d.pop(att, None)
 
-            for n1, d in graph.nodes(data=True):
-                for att in ["ricciCurvature"]:
-                    d.pop(att, None)
+                for n1, d in graph.nodes(data=True):
+                    for att in ["x", "y", "z"]:
+                        d.pop(att, None)
+        else:
+            for graph in training_set:
+                for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+                    for att in ["ricciCurvature", "original_RC"]:
+                        d.pop(att, None)
 
-    all_networkx_list = DataUtils.data_loader(Config.working_directory + "RiccisCurvatureGraphs.pickle")
+                for n1, d in graph.nodes(data=True):
+                    for att in ["ricciCurvature"]:
+                        d.pop(att, None)
+
+    all_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
+    oracle_list_by_subject = [x for idx, x in enumerate(oracle_list_by_subject) if idx not in [18, 12]]
+
     for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(all_networkx_list):
+        print("prepping for training:", excluded_subject_id, " on ", len(all_networkx_list))
         training_set = []
         oracle_list = []
         for x in [x for idx, x in enumerate(all_networkx_list) if idx != excluded_subject_id]:
@@ -145,20 +151,32 @@ if __name__ == "__main__":
         for x in [x for idx, x in enumerate(oracle_list_by_subject) if idx != excluded_subject_id]:
             for y in x:
                 oracle_list.append(y)
+        print("testingsetlenght:", len(training_set))
+        print("oracle lenght:", len(oracle_list))
 
+        print("translating to pandas")
         pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
+        testing_pandas_graph_list = DataUtils.networkx_list_to_pandas_list(excluded_subject_networkx_graphs)
+        print("translating to stellargraph")
         stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
+        testing_stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(testing_pandas_graph_list)
         print(stellargraph_graphs[0].info())
-        pandas_oracle = pd.DataFrame.from_dict(oracle_list)
+        pandas_oracle = pd.DataFrame.from_records(oracle_list)
+        testing_pandas_oracle = pd.DataFrame.from_records(oracle_list_by_subject[excluded_subject_id])
 
         scaler = MinMaxScaler()  # Scaling oracle
         scaler.fit(pandas_oracle)
         d = scaler.transform(pandas_oracle)
         pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
 
-        model, history = generate_model(stellargraph_graphs, pandas_oracle)
-        name_file_identifier ="no_".join(excluded_subject_id).join("_") if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_".join(excluded_subject_id).join("_")
+        d = scaler.transform(testing_pandas_oracle)
+        testing_pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
 
-        model.save(Config.working_directory +"/models/"+ name_file_identifier +"model.h5")
-        DataUtils.data_saver(Config.working_directory+"/histories/"+name_file_identifier+"model_history.pickle", history)
-        DataUtils.data_saver(Config.working_directory+"/scalers/"+name_file_identifier+"result_scaler.pickle", scaler)
+        model, history = generate_model(stellargraph_graphs, pandas_oracle, testing_stellargraph_graphs, testing_pandas_oracle )
+        name_file_identifier = "no_"+str(excluded_subject_id)+"_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_"+str(excluded_subject_id)+"_"
+
+        model.save(Config.working_directory + "/models/" + name_file_identifier + "model.h5")
+        DataUtils.data_saver(Config.working_directory + "/histories/" + name_file_identifier + "model_history.pickle",
+                             history)
+        DataUtils.data_saver(Config.working_directory + "/scalers/" + name_file_identifier + "result_scaler.pickle",
+                             scaler)

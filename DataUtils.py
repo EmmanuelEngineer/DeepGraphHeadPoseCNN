@@ -83,7 +83,7 @@ def data_loader(path):
 
 def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as of the stellargraph docs
     output_list = []
-    for x in input_list:
+    for idx, x in enumerate(input_list):
         edges = nx.to_pandas_edgelist(x)
         nodes = pd.DataFrame.from_dict(dict(x.nodes(data=True)), orient='index')
         output_list.append({"nodes": nodes, "edges": edges})
