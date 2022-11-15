@@ -6,6 +6,8 @@ import pandas as pd
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
 from GraphRicciCurvature.OllivierRicci import OllivierRicci
 from sklearn.preprocessing import MinMaxScaler
+from stellargraph import StellarGraph
+
 import Config
 import networkx as nx
 import math
@@ -110,7 +112,7 @@ def apply_RicciCurvature_on_list(networkx_list):
     return output_list
 
 
-def plot_history_scaled(history, scaler,  individual_figsize=(7, 4), return_figure=False, **kwargs):
+def plot_history_scaled(history, scaler, individual_figsize=(7, 4), return_figure=False, **kwargs):
     """
     Plot the training history of one or more models.
 
@@ -157,17 +159,23 @@ def plot_history_scaled(history, scaler,  individual_figsize=(7, 4), return_figu
 
     has_validation = False
     for ax, m in zip(all_axes[:, 0], metrics):
-        for h in history:
-            # summarize history for metric m
-            ax.plot(scaler.inverse_transform(h.history[m]), c=color_train)
 
+        for h in history:
+            scaledh = []
+            for x in h.history[m]:
+                scaledh.append(scaler.inverse_transform(np.array(x).reshape(-1, 1)))
+            # summarize history for metric m
+            ax.plot(scaledh, c=color_train)
+            scaled_val = []
             try:
-                val = scaler.inverse_transform(h.history["val_" + m])
+                val = h.history["val_" + m]
             except KeyError:
                 # no validation data for this metric
                 pass
             else:
-                ax.plot(val, c=color_validation)
+                for x in val:
+                    scaled_val.append(scaler.inverse_transform(np.array(x).reshape(-1, 1)))
+                ax.plot(np.array(scaled_val).reshape(1, -1), c=color_validation)
                 has_validation = True
 
         ax.set_ylabel(m, fontsize="x-large")
@@ -186,3 +194,34 @@ def plot_history_scaled(history, scaler,  individual_figsize=(7, 4), return_figu
 
     if return_figure:
         return fig
+
+
+def graph_cleaner(networkx_list, ricci_graphs=Config.RegressionSetting.apply_RicciCurvature):
+
+    if ricci_graphs:
+        for graph in networkx_list:
+            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+                for att in ["weight", "original_RC"]:
+                    d.pop(att, None)
+
+            for n1, d in graph.nodes(data=True):
+                for att in ["x", "y", "z"]:
+                    d.pop(att, None)
+    else:
+        for graph in networkx_list:
+            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+                for att in ["ricciCurvature", "original_RC"]:
+                    d.pop(att, None)
+
+            for n1, d in graph.nodes(data=True):
+                for att in ["ricciCurvature"]:
+                    d.pop(att, None)
+    return networkx_list
+
+
+def convert_pandas_graph_list_to_stellargraph(nx_list):
+    sg_graphs = []
+    for idx, graph_nx in enumerate(nx_list):  # Conversion to stellargraph Graphs
+        sg_graphs.append(StellarGraph(
+            {"landmark": graph_nx["nodes"]}, {"line": graph_nx["edges"]}))
+    return sg_graphs

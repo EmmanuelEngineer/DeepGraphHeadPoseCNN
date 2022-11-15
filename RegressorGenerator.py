@@ -30,14 +30,6 @@ import GraphGenerator
 import ImageAnalizer
 
 
-def convert_pandas_graph_list_to_stellargraph(nx_list):
-    sg_graphs = []
-    for idx, graph_nx in enumerate(nx_list):  # Conversion to stellargraph Graphs
-        sg_graphs.append(StellarGraph(
-            {"landmark": graph_nx["nodes"]}, {"line": graph_nx["edges"]}))
-    return sg_graphs
-
-
 def generate_model(graphs, oracle, testing_graphs, testing_oracle):
     generator = PaddedGraphGenerator(graphs=graphs)
     layer_sizes = [75, 75, 1]
@@ -76,9 +68,6 @@ def generate_model(graphs, oracle, testing_graphs, testing_oracle):
         # Creazione del modello effettivo
     )
 
-
-
-
     gen = PaddedGraphGenerator(graphs=graphs)
 
     train_gen = gen.flow(  # dati per l'addestramento
@@ -116,26 +105,11 @@ if __name__ == "__main__":
         DataUtils.data_saver(Config.working_directory + "oracle_by_subject.pickle", training_set)
 
     all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_by_subject_corrected.pickle")
+    cleaned_list = []
+    for x in all_networkx_list:
+        cleaned_list.append(DataUtils.graph_cleaner(x))
 
-    for training_set in all_networkx_list:
-        if Config.RegressionSetting.apply_RicciCurvature:
-            for graph in training_set:
-                for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
-                    for att in ["weight", "original_RC"]:
-                        d.pop(att, None)
-
-                for n1, d in graph.nodes(data=True):
-                    for att in ["x", "y", "z"]:
-                        d.pop(att, None)
-        else:
-            for graph in training_set:
-                for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
-                    for att in ["ricciCurvature", "original_RC"]:
-                        d.pop(att, None)
-
-                for n1, d in graph.nodes(data=True):
-                    for att in ["ricciCurvature"]:
-                        d.pop(att, None)
+    all_networkx_list = cleaned_list
 
     all_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
     oracle_list_by_subject = [x for idx, x in enumerate(oracle_list_by_subject) if idx not in [18, 12]]
@@ -158,8 +132,8 @@ if __name__ == "__main__":
         pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
         testing_pandas_graph_list = DataUtils.networkx_list_to_pandas_list(excluded_subject_networkx_graphs)
         print("translating to stellargraph")
-        stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
-        testing_stellargraph_graphs = convert_pandas_graph_list_to_stellargraph(testing_pandas_graph_list)
+        stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
+        testing_stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(testing_pandas_graph_list)
         print(stellargraph_graphs[0].info())
         pandas_oracle = pd.DataFrame.from_records(oracle_list)
         testing_pandas_oracle = pd.DataFrame.from_records(oracle_list_by_subject[excluded_subject_id])
