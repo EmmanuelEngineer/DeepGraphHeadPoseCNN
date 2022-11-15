@@ -54,7 +54,9 @@ if __name__ == "__main__":
 
 
         #DataUtils.plot_history_scaled(history, scaler, return_figure=True).show()
-        sg.utils.plot_history(history, return_figure=True).show()
+        plot = sg.utils.plot_history(history, return_figure=True)
+        plot.savefig(Config.working_directory+"history_plots/"+identifier+".jpg")
+        plot.clear()
         testing_graphs = DataUtils.graph_cleaner(all_networkx_list[number_of_model], ricci_graphs=ricci)
         pandas_graph_list = DataUtils.networkx_list_to_pandas_list(testing_graphs)
         stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
