@@ -15,27 +15,28 @@ import matplotlib as plt
 from keras.saving.save import load_model
 import pandas as pd
 
+
 def get_object_data_from_path(path):
-    ricci = False
+    is_ricci = False
     file_data = re.findall("(ricci_)no_(\d+)_", model_path)
     print(file_data)
     if len(file_data) != 0:
         if "ricci_" in model_path:
-            ricci = True
-        number_of_model = None
-        if ricci:
-            number_of_model = int(file_data[0][1])
+            is_ricci = True
+        number_id = None
+        if is_ricci:
+            number_id = int(file_data[0][1])
         else:
-            number_of_model = int(file_data[0][0])
-        identifier = ("ricci_" if ricci else "") + "no_" + str(number_of_model)
+            number_id = int(file_data[0][0])
+        string_identifier = ("ricci_" if is_ricci else "") + "no_" + str(number_id)
     else:
         file_data = re.findall("(ricci_)no_subject_indipendence_", model_path)
         if "ricci_" in model_path:
-            ricci = True
-        number_of_model = None
-        identifier = ("ricci_" if ricci else "") + "no_subject_indipendence_"
+            is_ricci = True
+        number_id = None
+        string_identifier = ("ricci_" if is_ricci else "") + "no_subject_indipendence_"
 
-    return identifier, ricci, number_of_model
+    return string_identifier, is_ricci, number_id
 
 
 if __name__ == "__main__":
@@ -67,11 +68,9 @@ if __name__ == "__main__":
                 scaler = DataUtils.data_loader(scaler_path)
                 break
 
-
-
-        #DataUtils.plot_history_scaled(history, scaler, return_figure=True).show()
+        # DataUtils.plot_history_scaled(history, scaler, return_figure=True).show()
         plot = sg.utils.plot_history(history, return_figure=True)
-        plot.savefig(Config.working_directory+"history_plots/"+identifier+".jpg")
+        plot.savefig(Config.working_directory + "history_plots/" + identifier + ".jpg")
         plot.clear()
         testing_graphs = DataUtils.graph_cleaner(all_networkx_list[number_of_model], ricci_graphs=ricci)
         pandas_graph_list = DataUtils.networkx_list_to_pandas_list(testing_graphs)
@@ -81,10 +80,7 @@ if __name__ == "__main__":
         non_scaled_prediction = model.predict(obj)
         scaled_prediction = scaler.inverse_transform(non_scaled_prediction)
         pandas_oracle = pd.DataFrame.from_records(oracle_list_by_subject[number_of_model])
-        pandas_predictions = pd.DataFrame(scaled_prediction, columns=("predicted pitch", "predicted yaw", "predicted roll"))
+        pandas_predictions = pd.DataFrame(scaled_prediction,
+                                          columns=("predicted pitch", "predicted yaw", "predicted roll"))
         pandas_predictions = pandas_predictions.join(pandas_oracle)
-        pandas_predictions.to_csv(Config.working_directory + "predictions/"+identifier+".csv")
-
-
-
-
+        pandas_predictions.to_csv(Config.working_directory + "predictions/" + identifier + ".csv")
