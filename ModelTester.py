@@ -14,6 +14,30 @@ from keras import Sequential
 import matplotlib as plt
 from keras.saving.save import load_model
 import pandas as pd
+
+def get_object_data_from_path(path):
+    ricci = False
+    file_data = re.findall("(ricci_)no_(\d+)_", model_path)
+    print(file_data)
+    if len(file_data) != 0:
+        if "ricci_" in model_path:
+            ricci = True
+        number_of_model = None
+        if ricci:
+            number_of_model = int(file_data[0][1])
+        else:
+            number_of_model = int(file_data[0][0])
+        identifier = ("ricci_" if ricci else "") + "no_" + str(number_of_model)
+    else:
+        file_data = re.findall("(ricci_)no_subject_indipendence_", model_path)
+        if "ricci_" in model_path:
+            ricci = True
+        number_of_model = None
+        identifier = ("ricci_" if ricci else "") + "no_subject_indipendence_"
+
+    return identifier, ricci, number_of_model
+
+
 if __name__ == "__main__":
     model_paths = glob.glob(Config.working_directory + "/models/*")
     histories_paths = glob.glob(Config.working_directory + "/histories/*")
@@ -28,18 +52,10 @@ if __name__ == "__main__":
     for model_path in model_paths:
         print(model_path)
         model = load_model(model_path, custom_objects=custom_objects)
-        ricci = False
-        data_model = re.findall("(ricci_)no_(\d+)_", model_path)
-        print(data_model)
-        if "ricci_" in model_path:
-            ricci= True
-        number_of_model = None
-        if ricci:
-            number_of_model = int(data_model[0][1])
-        else: number_of_model = int(data_model[0][0])
-        history = None
-        identifier = ("ricci_" if ricci else "") + "no_"+str(number_of_model)
 
+        identifier, ricci, number_of_model = get_object_data_from_path(model_path)
+
+        history = None
         for history_path in histories_paths:
             if re.findall(identifier, history_path):
                 history = DataUtils.data_loader(history_path)
@@ -68,5 +84,7 @@ if __name__ == "__main__":
         pandas_predictions = pd.DataFrame(scaled_prediction, columns=("predicted pitch", "predicted yaw", "predicted roll"))
         pandas_predictions = pandas_predictions.join(pandas_oracle)
         pandas_predictions.to_csv(Config.working_directory + "predictions/"+identifier+".csv")
+
+
 
 
