@@ -14,6 +14,7 @@ n_of_threads = 4
 
 class RegressionSetting:
     apply_RicciCurvature = True
+    subject_indipendence = False
 
 
 class ImageVisualizer:
