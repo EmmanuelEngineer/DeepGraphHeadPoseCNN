@@ -71,7 +71,7 @@ def generate_model(graphs, oracle, testing_graphs, testing_oracle):
     gen = PaddedGraphGenerator(graphs=graphs)
 
     train_gen = gen.flow(  # dati per l'addestramento
-        range(len(training_set)),
+        range(len(graphs)),
         targets=oracle,
         batch_size=40,
         symmetric_normalization=False,
@@ -113,44 +113,88 @@ if __name__ == "__main__":
 
     all_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
     oracle_list_by_subject = [x for idx, x in enumerate(oracle_list_by_subject) if idx not in [18, 12]]
+    if Config.RegressionSetting.subject_indipendence:
+        for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(all_networkx_list):
+            name_file_identifier = "no_"+str(excluded_subject_id)+"_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_"+str(excluded_subject_id)+"_"
 
-    for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(all_networkx_list):
-        print("prepping for training:", excluded_subject_id, " on ", len(all_networkx_list))
-        training_set = []
+            print("prepping for training:", name_file_identifier, " on ", len(all_networkx_list))
+            training_set = []
+            oracle_list = []
+            for x in [x for idx, x in enumerate(all_networkx_list) if idx != excluded_subject_id]:
+                for y in x:
+                    training_set.append(y)
+
+            for x in [x for idx, x in enumerate(oracle_list_by_subject) if idx != excluded_subject_id]:
+                for y in x:
+                    oracle_list.append(y)
+            print("testingsetlenght:", len(training_set))
+            print("oracle lenght:", len(oracle_list))
+
+            print("translating to pandas")
+            pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
+            testing_pandas_graph_list = DataUtils.networkx_list_to_pandas_list(excluded_subject_networkx_graphs)
+            print("translating to stellargraph")
+            stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
+            testing_stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(testing_pandas_graph_list)
+            print(stellargraph_graphs[0].info())
+            pandas_oracle = pd.DataFrame.from_records(oracle_list)
+            testing_pandas_oracle = pd.DataFrame.from_records(oracle_list_by_subject[excluded_subject_id])
+
+            scaler = MinMaxScaler()  # Scaling oracle
+            scaler.fit(pandas_oracle)
+            d = scaler.transform(pandas_oracle)
+            pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
+
+            d = scaler.transform(testing_pandas_oracle)
+            testing_pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
+
+            model, history = generate_model(stellargraph_graphs, pandas_oracle, testing_stellargraph_graphs, testing_pandas_oracle)
+
+            model.save(Config.working_directory + "/models/" + name_file_identifier + "model.h5")
+            DataUtils.data_saver(Config.working_directory + "/histories/" + name_file_identifier + "model_history.pickle",
+                                 history)
+            DataUtils.data_saver(Config.working_directory + "/scalers/" + name_file_identifier + "result_scaler.pickle",
+                                 scaler)
+    else:
+        name_file_identifier = "no_subject_indipendence_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_subject_indipendence_"
+
+        print("prepping for training:", name_file_identifier)
+        dataset = []
         oracle_list = []
-        for x in [x for idx, x in enumerate(all_networkx_list) if idx != excluded_subject_id]:
+        for x in all_networkx_list:
             for y in x:
-                training_set.append(y)
+                dataset.append(y)
 
-        for x in [x for idx, x in enumerate(oracle_list_by_subject) if idx != excluded_subject_id]:
+        for x in oracle_list_by_subject:
             for y in x:
                 oracle_list.append(y)
-        print("testingsetlenght:", len(training_set))
+
+        print("testing set lenght:", len(dataset))
         print("oracle lenght:", len(oracle_list))
 
         print("translating to pandas")
-        pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
-        testing_pandas_graph_list = DataUtils.networkx_list_to_pandas_list(excluded_subject_networkx_graphs)
+        pandas_graph_list = DataUtils.networkx_list_to_pandas_list(dataset)
         print("translating to stellargraph")
         stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
-        testing_stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(testing_pandas_graph_list)
-        print(stellargraph_graphs[0].info())
         pandas_oracle = pd.DataFrame.from_records(oracle_list)
-        testing_pandas_oracle = pd.DataFrame.from_records(oracle_list_by_subject[excluded_subject_id])
 
         scaler = MinMaxScaler()  # Scaling oracle
         scaler.fit(pandas_oracle)
         d = scaler.transform(pandas_oracle)
         pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
 
-        d = scaler.transform(testing_pandas_oracle)
-        testing_pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
+        train_graphs, test_graphs, train_oracle, test_oracle = model_selection.train_test_split(
+            stellargraph_graphs, pandas_oracle, train_size=0.7, test_size=None,
+        )
 
-        model, history = generate_model(stellargraph_graphs, pandas_oracle, testing_stellargraph_graphs, testing_pandas_oracle )
-        name_file_identifier = "no_"+str(excluded_subject_id)+"_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_"+str(excluded_subject_id)+"_"
+        model, history = generate_model(train_graphs, train_oracle, test_graphs, test_oracle)
 
         model.save(Config.working_directory + "/models/" + name_file_identifier + "model.h5")
         DataUtils.data_saver(Config.working_directory + "/histories/" + name_file_identifier + "model_history.pickle",
                              history)
         DataUtils.data_saver(Config.working_directory + "/scalers/" + name_file_identifier + "result_scaler.pickle",
                              scaler)
+
+
+
+
