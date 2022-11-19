@@ -8,7 +8,6 @@ import Config
 import networkx as nx
 import math
 
-data = DataUtils.data_loader(Config.working_directory + "data_array.pickle")
 
 
 def node_distance(a, b):
@@ -77,15 +76,21 @@ def generate_graph(element):  # elements will contain the subject number and the
 
 
 if __name__ == "__main__":
+    landmarks_by_subject = DataUtils.data_loader(Config.working_directory + "landmarks_by_subject.pickle")
+    len(landmarks_by_subject)
     # Executive Code
     begin = time.time()
-    array_of_graphs = []
-    with ProcessPoolExecutor(max_workers=Config.n_of_threads) as exe:
-        iterable_of_graphs = exe.map(generate_graph, enumerate(data))
-        for subject_number, i in iterable_of_graphs:
-            print(f"{subject_number} on {len(data)} complete.")
-            array_of_graphs.append(i)
+    graphs_by_subject = []
+    for subject_landmarks in landmarks_by_subject:
+        array_of_graphs = []
+        with ProcessPoolExecutor(max_workers=Config.n_of_threads) as exe:
+            iterable_of_graphs = exe.map(generate_graph, enumerate(subject_landmarks))
+            for subject_number, i in iterable_of_graphs:
+                print(f"{subject_number} on {len(subject_landmarks)} complete.")
+                array_of_graphs.append(i)
+        graphs_by_subject.append(array_of_graphs)
+
     end = time.time()
     print("Completed in ", end - begin)
 
-    DataUtils.data_saver(Config.working_directory + "array_graph_networkx.pickle", array_of_graphs)
+    DataUtils.data_saver(Config.working_directory + "networkx_list_by_subject.pickle", graphs_by_subject)

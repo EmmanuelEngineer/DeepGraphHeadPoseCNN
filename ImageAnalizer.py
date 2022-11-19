@@ -20,8 +20,8 @@ import DataUtils
 def import_images_paths(dataset_directory):
     import glob
 
-    array_of_directories = [Config.image_dataset + name + "/*" for name in os.listdir(Config.image_dataset)
-                            if os.path.isdir(os.path.join(Config.image_dataset, name))]
+    array_of_directories = [dataset_directory + name + "/*" for name in os.listdir(dataset_directory)
+                            if os.path.isdir(os.path.join(dataset_directory, name))]
 
     print(array_of_directories)
     array_of_glob = []
@@ -95,6 +95,7 @@ def landmark_extraction(list_of_paths):
 
 
 if __name__ == "__main__":
+    # ['13', '3', '1', '12', '22', '21', '16', '6', '10', '7', '20', '5', '18', '4', '23', '14', '9', '19', '15', '17', '24', '11', '2', '8']
     images_paths_all_subjects = import_images_paths(Config.image_dataset)
     oracle_all_subjects = []
     id_to_exclude = []
@@ -106,5 +107,5 @@ if __name__ == "__main__":
         oracle_all_subjects.append([ele for idx, ele in enumerate(subject_oracle) if idx not in id_to_exclude_of_subjects])
         landmark_array_all_subjects.append(landmark_array_of_subjects)
 
-    DataUtils.data_saver(Config.working_directory+"landmarks_by_subject.pickle", landmark_array_all_subjects)
-    DataUtils.data_saver(Config.working_directory+"oracle_by_subject.pickle", oracle_all_subjects)
+    DataUtils.data_saver(Config.working_directory+"landmarks_by_subject_5.pickle", landmark_array_all_subjects)
+    DataUtils.data_saver(Config.working_directory+"oracle_by_subject_5.pickle", oracle_all_subjects)

@@ -1,5 +1,5 @@
 class Test:
-    image_dataset = "./workingdirectory/Test/Images/*"
+    image_dataset = "./workingdirectory/Test/"
     working_directory = "./workingdirectory/Test/"
 
 
@@ -7,6 +7,7 @@ class Debug:
     active = False
 
 
+version = 2
 image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/" if not Debug.active else Test.image_dataset
 working_directory = "./workingdirectory/" if not Debug.active else Test.working_directory
 n_of_threads = 4
@@ -14,7 +15,7 @@ n_of_threads = 4
 
 class RegressionSetting:
     apply_RicciCurvature = True
-    subject_indipendence = False
+    subject_indipendence = True
 
 
 class ImageVisualizer:
@@ -64,7 +65,8 @@ class Extraction:
         extra = [266, 329, 36, 100, 213, 101, 50, 371, 330, 280,
 
                  349, 347, 340, 376, 433, 264, 120, 35, 117, 215,
-                 137,227,34,234,93,192,366,401,435,367,447,104,108,337,333
+                 137, 227, 34, 234, 93, 192, 366, 401, 435, 367, 447, 104, 108, 337, 333
                  ]
 
         total_landmarks = left_eye + right_eye + mouth + jaw + nose + extra
+        only_to_include = [4, 139, 368, 151, 172, 397]

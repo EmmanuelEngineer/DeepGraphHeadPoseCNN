@@ -30,14 +30,17 @@ import GraphGenerator
 import ImageAnalizer
 
 
-def generate_model(graphs, oracle, testing_graphs, testing_oracle):
-    generator = PaddedGraphGenerator(graphs=graphs)
-    layer_sizes = [75, 75, 1]
+def generate_model(graphs_for_training, oracle, testing_graphs, testing_oracle):
+    print("train_graphs", len(graphs_for_training))
+    print("train_oracle", oracle)
+    print("validation_graphs", testing_graphs)
+    print("validation_oracle",testing_oracle)
+    generator = PaddedGraphGenerator(graphs=graphs_for_training)
+    layer_sizes = [300, 300, 300, 300, 300, 150, 1]
     k = 35
     dgcnn_model = DeepGraphCNN(  # Rete neurale che fa da traduttore per quella successiva
         layer_sizes=layer_sizes,
-        activations=["tanh", "tanh", "tanh"],
-        # attivazioni applicate all'output del layer: Fare riferimento a https://keras.io/api/layers/activations/
+        activations=["tanh", "tanh", "tanh", "tanh", "tanh", "tanh", "tanh"],        # attivazioni applicate all'output del layer: Fare riferimento a https://keras.io/api/layers/activations/
         k=k,  # numero di tensori in output
         bias=False,
         generator=generator,
@@ -50,7 +53,7 @@ def generate_model(graphs, oracle, testing_graphs, testing_oracle):
     x_out = Conv1D(filters=32, kernel_size=10, strides=1)(x_out)
 
     x_out = Flatten()(x_out)
-
+    x_out = Dense(units=1024, activation="tanh")(x_out)
     x_out = Dense(units=512, activation="tanh")(x_out)
     x_out = Dense(units=256, activation="tanh")(x_out)
 
@@ -68,16 +71,16 @@ def generate_model(graphs, oracle, testing_graphs, testing_oracle):
         # Creazione del modello effettivo
     )
 
-    gen = PaddedGraphGenerator(graphs=graphs)
+    gen = PaddedGraphGenerator(graphs=graphs_for_training)
 
     train_gen = gen.flow(  # dati per l'addestramento
-        range(len(graphs)),
+        range(len(graphs_for_training)),
         targets=oracle,
         batch_size=40,
         symmetric_normalization=False,
     )
-    gen = PaddedGraphGenerator(graphs=testing_graphs)
-    test_gen = gen.flow(  # dati per il test
+    test_generator = PaddedGraphGenerator(graphs=testing_graphs)
+    test_gen = test_generator.flow(  # dati per il test
         range(len(testing_graphs)),
         targets=testing_oracle,
         batch_size=1,
@@ -104,17 +107,27 @@ if __name__ == "__main__":
         networkx_list_by_subject = DataUtils.apply_RicciCurvature_on_list(training_set)
         DataUtils.data_saver(Config.working_directory + "oracle_by_subject.pickle", training_set)
 
-    all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_by_subject_corrected.pickle")
+    all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_by_subject_def.pickle")
     cleaned_list = []
     for x in all_networkx_list:
         cleaned_list.append(DataUtils.graph_cleaner(x))
 
+    oracle_list = []
     all_networkx_list = cleaned_list
+    for x in [x for idx, x in enumerate(oracle_list_by_subject)]:
+        for y in x:
+            oracle_list.append(y)
 
+    scaler = MinMaxScaler()  # Scaling oracle
+    pandas_oracle = pd.DataFrame.from_records(oracle_list)
+    scaler.fit(pandas_oracle)
     all_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
     oracle_list_by_subject = [x for idx, x in enumerate(oracle_list_by_subject) if idx not in [18, 12]]
     if Config.RegressionSetting.subject_indipendence:
         for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(all_networkx_list):
+            if excluded_subject_id != 6:
+                continue
+
             name_file_identifier = "no_"+str(excluded_subject_id)+"_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_"+str(excluded_subject_id)+"_"
 
             print("prepping for training:", name_file_identifier, " on ", len(all_networkx_list))
@@ -140,8 +153,6 @@ if __name__ == "__main__":
             pandas_oracle = pd.DataFrame.from_records(oracle_list)
             testing_pandas_oracle = pd.DataFrame.from_records(oracle_list_by_subject[excluded_subject_id])
 
-            scaler = MinMaxScaler()  # Scaling oracle
-            scaler.fit(pandas_oracle)
             d = scaler.transform(pandas_oracle)
             pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
 
@@ -150,14 +161,15 @@ if __name__ == "__main__":
 
             model, history = generate_model(stellargraph_graphs, pandas_oracle, testing_stellargraph_graphs, testing_pandas_oracle)
 
-            model.save(Config.working_directory + "/models/" + name_file_identifier + "model.h5")
-            DataUtils.data_saver(Config.working_directory + "/histories/" + name_file_identifier + "model_history.pickle",
+            model.save(Config.working_directory +"v"+str(Config.version)+ "/models/" + name_file_identifier + "model.h5")
+            DataUtils.data_saver(Config.working_directory +"v"+str(Config.version)+ "/histories/" + name_file_identifier + "model_history.pickle",
                                  history)
-            DataUtils.data_saver(Config.working_directory + "/scalers/" + name_file_identifier + "result_scaler.pickle",
+            DataUtils.data_saver(Config.working_directory +"v"+str(Config.version)+ "/scalers/" + name_file_identifier + "result_scaler.pickle",
                                  scaler)
+
     else:
         name_file_identifier = "no_subject_indipendence_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_subject_indipendence_"
-
+        print(Config.working_directory +"v"+str(Config.version)+ "/histories/" + name_file_identifier + "model_history.pickle")
         print("prepping for training:", name_file_identifier)
         dataset = []
         oracle_list = []
@@ -184,16 +196,23 @@ if __name__ == "__main__":
         pandas_oracle = pd.DataFrame(d, columns=pandas_oracle.columns)
 
         train_graphs, test_graphs, train_oracle, test_oracle = model_selection.train_test_split(
-            stellargraph_graphs, pandas_oracle, train_size=0.7, test_size=None,
+            stellargraph_graphs, pandas_oracle, train_size=0.7, test_size=None, random_state=20
         )
 
         model, history = generate_model(train_graphs, train_oracle, test_graphs, test_oracle)
 
-        model.save(Config.working_directory + "/models/" + name_file_identifier + "model.h5")
-        DataUtils.data_saver(Config.working_directory + "/histories/" + name_file_identifier + "model_history.pickle",
+        model.save(Config.working_directory +"v"+str(Config.version)+ "/models/" + name_file_identifier + "model.h5")
+        DataUtils.data_saver(Config.working_directory +"v"+str(Config.version)+ "/histories/" + name_file_identifier + "model_history.pickle",
                              history)
-        DataUtils.data_saver(Config.working_directory + "/scalers/" + name_file_identifier + "result_scaler.pickle",
+        DataUtils.data_saver(Config.working_directory +"v"+str(Config.version)+ "/scalers/" + name_file_identifier + "result_scaler.pickle",
                              scaler)
+        DataUtils.data_saver(Config.working_directory+"v"+str(Config.version) + "/testgraphs/" + name_file_identifier + "testgraphs.pickle",
+                             test_graphs)
+        DataUtils.data_saver(
+            Config.working_directory+"v"+str(Config.version) + "/oracles/" + name_file_identifier + "test_oracle.pickle",
+            pd.DataFrame(scaler.inverse_transform(test_oracle), columns=pandas_oracle.columns))
+
+
 
 
 

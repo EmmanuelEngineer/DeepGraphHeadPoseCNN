@@ -17,21 +17,12 @@ import DataUtils
 import numpy as np
 
 images_paths = ImageAnalizer.import_images_paths(Config.Test.image_dataset)
-point_array, x = ImageAnalizer.landmark_extraction(images_paths)
+point_array, x = ImageAnalizer.landmark_extraction(images_paths[0])
 
 custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooling}
-try:
-    model = load_model(Config.working_directory + "model.h5", custom_objects=custom_objects)
-except Exception as ex:
-    print("No model Found")
-    print(ex)
-    sys.exit(0)
 
-print(images_paths)
-
-model.summary()
-
-for index, image_path in enumerate(images_paths):
+for index, image_path in enumerate(images_paths[0]):
+    print(image_path)
     oracle_list = ImageAnalizer.extract_oracle([image_path])
     image = cv2.imread(image_path)
     image = image[:, :, ::-1].copy()
@@ -69,7 +60,7 @@ for index, image_path in enumerate(images_paths):
     plt.axis('off')
     plt.imshow(image)
     plt.show()
-
+"""
     pandas_graph_list = DataUtils.networkx_list_to_pandas_list([graph])
     pandas_oracle = pd.DataFrame.from_dict(oracle_list)
     result_scaler = MinMaxScaler().fit(pandas_oracle)
@@ -87,3 +78,4 @@ for index, image_path in enumerate(images_paths):
     print("no Scaling", predict)
     predict = result_scaler.inverse_transform(predict)
     print("predicted", predict, "expected", oracle_list[0])
+"""
