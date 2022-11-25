@@ -36,11 +36,12 @@ def extract_oracle(paths_of_images):
 
     # the oracle of each image is saved in the file name as pitch, yaw, roll
     # this function will read the file name return the oracle as an array
-    regex = "(frame_\\d\\d\\d\\d\\d_)(([+]|-).*)(([+]|-).*)(([+]|-).*)[.]png"
+    regex = "(frame_.*_)(([+]|-).*)(([+]|-).*)(([+]|-).*)[.]png"
     oracle_array = []
     counter = 0
     for index, single_oracle in enumerate(paths_of_images):
         list_of_matches = re.findall(regex, single_oracle)
+        print(list_of_matches)
         arr = list_of_matches.pop()
         oracle_array.append({"pitch": float(arr[1]), "yaw": float(arr[3]), "roll": float(arr[5])})
         counter += 1

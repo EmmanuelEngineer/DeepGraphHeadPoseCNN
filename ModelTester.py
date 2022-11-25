@@ -53,11 +53,12 @@ if __name__ == "__main__":
     custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooling}
     for model_path in model_paths:
         print(model_path)
+        identifier, ricci, number_of_model = get_object_data_from_path(model_path)
+        if number_of_model is not  None:
+            continue
         model = load_model(model_path, custom_objects=custom_objects)
 
-        identifier, ricci, number_of_model = get_object_data_from_path(model_path)
-        if number_of_model != 6:
-            continue
+
 
         history = None
         for history_path in histories_paths:
@@ -99,7 +100,7 @@ if __name__ == "__main__":
         generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
         obj = generator.flow(stellargraph_graphs)
         non_scaled_prediction = model.predict(obj)
-        print("non_scaled_prediction",non_scaled_prediction)
+        print("non_scaled_prediction", non_scaled_prediction)
         scaled_prediction =[]
         for x in non_scaled_prediction:
             print("elemento",x)

@@ -30,8 +30,16 @@ def extract_data_from_report(report):
     report["max_error"] = max_list.values
     max_list = report[["pitch_error", "yaw_error", "roll_error"]].abs().idxmax(axis=1)
     report["max_error_axis"] = max_list.values
-    report[0] = None
 
+    counter = 0
+    report.to_csv(Config.working_directory + "errori.csv")
+    print ("media errore pitch" , report["pitch_error"].sum()/len(report["pitch_error"]))
+    print ("media errore yaw" , report["yaw_error"].sum()/len(report["yaw_error"]))
+    print ("media errore roll" , report["roll_error"].sum()/len(report["roll_error"]))
+
+
+
+    report[0] = None
     return report
 
 
@@ -45,7 +53,7 @@ if __name__ == "__main__":
     for prediction_path in predictions_paths:
         identifier, ricci, number_of_model = ModelTester.get_object_data_from_path(prediction_path)
         print(prediction_path)
-        if number_of_model != 6:
+        if (number_of_model is not None):
             continue
 
         if number_of_model is None:

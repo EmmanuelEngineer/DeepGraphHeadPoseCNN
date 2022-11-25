@@ -76,7 +76,7 @@ def generate_graph(element):  # elements will contain the subject number and the
 
 
 if __name__ == "__main__":
-    landmarks_by_subject = DataUtils.data_loader(Config.working_directory + "landmarks_by_subject.pickle")
+    landmarks_by_subject = DataUtils.data_loader(Config.working_directory + "landmarks_by_subject_5.pickle")
     len(landmarks_by_subject)
     # Executive Code
     begin = time.time()
@@ -93,4 +93,4 @@ if __name__ == "__main__":
     end = time.time()
     print("Completed in ", end - begin)
 
-    DataUtils.data_saver(Config.working_directory + "networkx_list_by_subject.pickle", graphs_by_subject)
+    DataUtils.data_saver(Config.working_directory + "networkx_list_by_subject5.pickle", graphs_by_subject)

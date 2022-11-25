@@ -53,7 +53,6 @@ def generate_model(graphs_for_training, oracle, testing_graphs, testing_oracle):
     x_out = Conv1D(filters=32, kernel_size=10, strides=1)(x_out)
 
     x_out = Flatten()(x_out)
-    x_out = Dense(units=1024, activation="tanh")(x_out)
     x_out = Dense(units=512, activation="tanh")(x_out)
     x_out = Dense(units=256, activation="tanh")(x_out)
 
@@ -87,7 +86,7 @@ def generate_model(graphs_for_training, oracle, testing_graphs, testing_oracle):
         symmetric_normalization=False,
     )
 
-    epochs = 100  # ripetizioni dell'addestramento
+    epochs = 400  # ripetizioni dell'addestramento
 
     history_internal = model_to_fit.fit(
         train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
@@ -101,7 +100,6 @@ def generate_model(graphs_for_training, oracle, testing_graphs, testing_oracle):
 
 
 if __name__ == "__main__":
-    networkx_list_by_subject = DataUtils.data_loader(Config.working_directory + "array_graph_networkx.pickle")
     oracle_list_by_subject = DataUtils.data_loader(Config.working_directory + "oracle_by_subject.pickle")
     if False:  # Config.RegressionSetting.apply_RicciCurvature:
         networkx_list_by_subject = DataUtils.apply_RicciCurvature_on_list(training_set)
@@ -125,8 +123,6 @@ if __name__ == "__main__":
     oracle_list_by_subject = [x for idx, x in enumerate(oracle_list_by_subject) if idx not in [18, 12]]
     if Config.RegressionSetting.subject_indipendence:
         for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(all_networkx_list):
-            if excluded_subject_id != 6:
-                continue
 
             name_file_identifier = "no_"+str(excluded_subject_id)+"_" if not Config.RegressionSetting.apply_RicciCurvature else "ricci_no_"+str(excluded_subject_id)+"_"
 

@@ -7,15 +7,15 @@ class Debug:
     active = False
 
 
-version = 2
+version = 1
 image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/" if not Debug.active else Test.image_dataset
 working_directory = "./workingdirectory/" if not Debug.active else Test.working_directory
 n_of_threads = 4
 
 
 class RegressionSetting:
-    apply_RicciCurvature = True
-    subject_indipendence = True
+    apply_RicciCurvature = False
+    subject_indipendence = False
 
 
 class ImageVisualizer:
@@ -69,4 +69,3 @@ class Extraction:
                  ]
 
         total_landmarks = left_eye + right_eye + mouth + jaw + nose + extra
-        only_to_include = [4, 139, 368, 151, 172, 397]
