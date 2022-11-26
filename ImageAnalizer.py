@@ -14,7 +14,7 @@ import DataUtils
 #   This class is designed to extract the dataset from a series of images
 #   and output an array of landmarks with the relative information
 #   stored with a dictionary.
-#   The oracle is stored as a second array with a dictionary
+#   The label is stored as a second array with a dictionary
 
 
 def import_images_paths(dataset_directory):
@@ -31,22 +31,22 @@ def import_images_paths(dataset_directory):
     return array_of_glob
 
 
-def extract_oracle(paths_of_images):
+def extract_labels(paths_of_images):
     import re
 
-    # the oracle of each image is saved in the file name as pitch, yaw, roll
-    # this function will read the file name return the oracle as an array
+    # the label of each image is saved in the file name as pitch, yaw, roll
+    # this function will read the file name return the label as an array
     regex = "(frame_.*_)(([+]|-).*)(([+]|-).*)(([+]|-).*)[.]png"
-    oracle_array = []
+    labels_array = []
     counter = 0
-    for index, single_oracle in enumerate(paths_of_images):
-        list_of_matches = re.findall(regex, single_oracle)
+    for index, single_label in enumerate(paths_of_images):
+        list_of_matches = re.findall(regex, single_label)
         print(list_of_matches)
         arr = list_of_matches.pop()
-        oracle_array.append({"pitch": float(arr[1]), "yaw": float(arr[3]), "roll": float(arr[5])})
+        labels_array.append({"pitch": float(arr[1]), "yaw": float(arr[3]), "roll": float(arr[5])})
         counter += 1
     print("total counted = ", counter)
-    return oracle_array
+    return labels_array
 
 
 def scale_landmarks(list_of_landmarks):
@@ -98,15 +98,16 @@ def landmark_extraction(list_of_paths):
 if __name__ == "__main__":
     # ['13', '3', '1', '12', '22', '21', '16', '6', '10', '7', '20', '5', '18', '4', '23', '14', '9', '19', '15', '17', '24', '11', '2', '8']
     images_paths_all_subjects = import_images_paths(Config.image_dataset)
-    oracle_all_subjects = []
+    labels_all_subjects = []
     id_to_exclude = []
     landmark_array_all_subjects = []
     for subject_id, subject_images in enumerate(images_paths_all_subjects):
-        subject_oracle = extract_oracle(subject_images)
+        subject_labels = extract_labels(subject_images)
         landmark_array_of_subjects, id_to_exclude_of_subjects = landmark_extraction(subject_images)
         print("Total faces non found: ", len(id_to_exclude_of_subjects))
-        oracle_all_subjects.append([ele for idx, ele in enumerate(subject_oracle) if idx not in id_to_exclude_of_subjects])
+        labels_all_subjects.append(
+            [ele for idx, ele in enumerate(subject_labels) if idx not in id_to_exclude_of_subjects])
         landmark_array_all_subjects.append(landmark_array_of_subjects)
 
-    DataUtils.data_saver(Config.working_directory+"landmarks_by_subject_5.pickle", landmark_array_all_subjects)
-    DataUtils.data_saver(Config.working_directory+"oracle_by_subject_5.pickle", oracle_all_subjects)
+    DataUtils.data_saver(Config.working_directory + "landmarks_by_subject.pickle", landmark_array_all_subjects)
+    DataUtils.data_saver(Config.working_directory + "labels_by_subject.pickle", labels_all_subjects)

@@ -23,10 +23,10 @@ custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooli
 
 for index, image_path in enumerate(images_paths[0]):
     print(image_path)
-    oracle_list = ImageAnalizer.extract_oracle([image_path])
+    oracle_list = ImageAnalizer.extract_labels([image_path])
     image = cv2.imread(image_path)
     image = image[:, :, ::-1].copy()
-    edge_list = GraphGenerator.edge_list_generator(point_array[0])
+    edge_list = GraphGenerator.euclidean_edge_generator(point_array[0])
     image_rows, image_cols, _ = image.shape
     if Config.Extraction.scale_landmarks:
         image_rows = 1000

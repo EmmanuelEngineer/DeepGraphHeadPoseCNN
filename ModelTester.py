@@ -84,17 +84,17 @@ if __name__ == "__main__":
         else:
             if ricci:
                 pandas_oracle = DataUtils.data_loader(
-                    Config.working_directory + "v" + str(Config.version) + "/nosubjectindipendence"
-                                                                           "/ricci_no_subject_indipendence_test_oracle.pickle")
+                    Config.working_directory + "v" + str(Config.version) + "/labels"
+                                                                           "/ricci_no_subject_indipendence_test_labels.pickle")
                 stellargraph_graphs = DataUtils.data_loader(
-                    Config.working_directory + "v" + str(Config.version) + "/nosubjectindipendence"
+                    Config.working_directory + "v" + str(Config.version) + "/test_graphs"
                                                                            "/ricci_no_subject_indipendence_testgraphs.pickle")
             else:
                 pandas_oracle = DataUtils.data_loader(
-                    Config.working_directory + "v" + str(Config.version) + "/nosubjectindipendence"
-                                                                           "/no_subject_indipendence_test_oracle.pickle")
+                    Config.working_directory + "v" + str(Config.version) + "/labels"
+                                                                           "/no_subject_indipendence_test_labels.pickle")
                 stellargraph_graphs = DataUtils.data_loader(
-                    Config.working_directory + "v" + str(Config.version) + "/nosubjectindipendence"
+                    Config.working_directory + "v" + str(Config.version) + "/test_graphs"
                                                                            "/no_subject_indipendence_testgraphs.pickle")
 
         generator = PaddedGraphGenerator(graphs=stellargraph_graphs)

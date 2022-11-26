@@ -112,9 +112,8 @@ def apply_RicciCurvature_on_list(networkx_list):
     return output_list
 
 
-def graph_cleaner(networkx_list, ricci_graphs=Config.RegressionSetting.apply_RicciCurvature):
-
-    if ricci_graphs:
+def graph_cleaner(networkx_list, edge_type=Config.weight_type):
+    if edge_type == "ricci":
         for graph in networkx_list:
             for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
                 for att in ["weight", "original_RC"]:

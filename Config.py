@@ -7,15 +7,15 @@ class Debug:
     active = False
 
 
-version = 1
+version = 4
 image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/" if not Debug.active else Test.image_dataset
 working_directory = "./workingdirectory/" if not Debug.active else Test.working_directory
 n_of_threads = 4
+weight_type = "ricci"  # euclidean cosine cityblock ricci
 
 
 class RegressionSetting:
-    apply_RicciCurvature = False
-    subject_indipendence = False
+    subject_indipendence = True
 
 
 class ImageVisualizer:
