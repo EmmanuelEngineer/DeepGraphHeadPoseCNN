@@ -15,9 +15,10 @@ def plot_results(results, title):
     results.plot.bar(rot=0, title=title, figsize=(15, 8))
 
     plt.legend()
-    plt.xlabel("Distanza dal centro")
-    plt.ylabel("Verità")
-    plt.show()
+    plt.xlabel("Verità Effettiva")
+    plt.ylabel("Errore")
+    plt.savefig(Config.working_directory + "v" + str(Config.version) + "/plots"
+                                                                       "/" + title + ".png")
     plt.clf()
 
 
@@ -54,7 +55,7 @@ def get_averages(dataframe):
                          "roll": averages_for_roll}, index=intervals)
 
 
-def extract_data_from_report(report):
+def extract_report_from_data(report):
     max_list = report[["pitch", "yaw", "roll"]].abs().max(axis=1)
     report["distance_from_center"] = max_list.values
 
@@ -82,49 +83,24 @@ def extract_data_from_report(report):
 
 if __name__ == "__main__":
     predictions_paths = glob.glob(Config.working_directory + "v" + str(Config.version) + "/predictions/*")
-    prediction_no_subject_independence = []
-    prediction_subject_independence = []
-    prediction_ricci_subject_independence = []
-    prediction_ricci_no_subject_independence = []
+    edge_type_index = []
+    report_container = []
 
     for prediction_path in predictions_paths:
-        identifier, ricci, number_of_model = ModelTester.get_object_data_from_path(prediction_path)
+        identifier, edge_type, number_of_model = ModelTester.get_object_data_from_path(prediction_path)
         print(prediction_path)
-        if (number_of_model is not None):
-            continue
 
         if number_of_model is None:
-            if ricci:
-                prediction_ricci_no_subject_independence = extract_data_from_report(pd.read_csv(prediction_path))
-            else:
-                prediction_no_subject_independence = extract_data_from_report(pd.read_csv(prediction_path))
+            prediction_data = extract_report_from_data(pd.read_csv(prediction_path))
+            plot_results(get_averages(prediction_data), identifier)
+
         else:
-            if ricci:
-                prediction_ricci_subject_independence.append(extract_data_from_report(pd.read_csv(prediction_path)))
-            else:
-                prediction_subject_independence.append(extract_data_from_report(pd.read_csv(prediction_path)))
+            if edge_type not in edge_type_index:
+                edge_type_index.append(edge_type)
+                report_container.append([])
+            idx = edge_type_index.index(edge_type)
+            report_container[idx].append(extract_report_from_data(pd.read_csv(prediction_path)))
 
-    if len(prediction_ricci_no_subject_independence) > 0:
-        error_r_n_s = prediction_ricci_no_subject_independence[
-            ["max_error", "distance_from_center"]] \
-            .sort_values("distance_from_center", ascending=True)
-        plot_results(get_averages(prediction_ricci_no_subject_independence), "ricci_no_subject_independence")
+    for idx, x in enumerate(edge_type_index):
+        plot_results(get_averages(pd.concat(report_container[idx])), x+"_subject_indipendence")
 
-    if len(prediction_no_subject_independence) > 0:
-        error_n_s = prediction_no_subject_independence[["max_error", "distance_from_center"]] \
-            .sort_values("distance_from_center", ascending=True)
-        plot_results(get_averages(prediction_no_subject_independence), "euclidean_no_subject_independence")
-
-    if len(prediction_subject_independence) > 0:
-        error_s = prediction_subject_independence[0][["max_error", "distance_from_center"]]
-        for x in prediction_subject_independence[1:]:
-            error_s = error_s.append(x[["max_error", "distance_from_center"]], ignore_index=True)
-        error_s = error_s.sort_values("distance_from_center", ascending=True)
-        plot_results(get_averages(prediction_subject_independence), "euclidean_subject_independence")
-
-    if len(prediction_ricci_subject_independence) > 0:
-        error_r_s = prediction_ricci_subject_independence[0][["max_error", "distance_from_center"]]
-        for x in prediction_ricci_subject_independence[1:]:
-            error_r_s = error_r_s.append(x[["max_error", "distance_from_center"]], ignore_index=True)
-        error_r_s = error_r_s.sort_values("distance_from_center", ascending=True)
-        plot_results(get_averages(prediction_ricci_subject_independence), "ricci_subject_independence")

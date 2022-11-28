@@ -3,6 +3,7 @@ import pickle
 
 import cv2
 import pandas as pd
+from IPython.core.display import display
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
 from GraphRicciCurvature.OllivierRicci import OllivierRicci
 from sklearn.preprocessing import MinMaxScaler
@@ -89,6 +90,7 @@ def networkx_list_to_pandas_list(input_list):  # Step taken for efficiency of as
         edges = nx.to_pandas_edgelist(x)
         nodes = pd.DataFrame.from_dict(dict(x.nodes(data=True)), orient='index')
         output_list.append({"nodes": nodes, "edges": edges})
+
     return output_list
 
 
@@ -124,7 +126,7 @@ def graph_cleaner(networkx_list, edge_type=Config.weight_type):
                     d.pop(att, None)
     else:
         for graph in networkx_list:
-            for n1, n2, d in graph.edges(data=True):  # leaving only the ricciscurvature result as weight
+            for n1, n2, d in graph.edges(data=True):
                 for att in ["ricciCurvature", "original_RC"]:
                     d.pop(att, None)
 
@@ -137,6 +139,7 @@ def graph_cleaner(networkx_list, edge_type=Config.weight_type):
 def convert_pandas_graph_list_to_stellargraph(nx_list):
     sg_graphs = []
     for idx, graph_nx in enumerate(nx_list):  # Conversion to stellargraph Graphs
-        sg_graphs.append(StellarGraph(
-            {"landmark": graph_nx["nodes"]}, {"line": graph_nx["edges"]}))
+        st = StellarGraph(
+            {"landmark": graph_nx["nodes"]}, {"line": graph_nx["edges"]})
+        sg_graphs.append(st)
     return sg_graphs
