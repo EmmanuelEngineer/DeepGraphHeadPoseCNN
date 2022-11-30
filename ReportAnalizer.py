@@ -1,17 +1,11 @@
 import glob
 
 import numpy
-import numpy as np
 
 import Config
-import DataUtils
 import ModelTester
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import mean_absolute_error
-
-from IPython.display import display
 
 
 def plot_results(results, title):
@@ -58,39 +52,38 @@ def get_averages(dataframe):
                          "roll": averages_for_roll}, index=intervals)
 
 
-def extract_errors_from_data(report):
-    max_list = report[["pitch", "yaw", "roll"]].abs().max(axis=1)
-    report["distance_from_center"] = max_list.values
+def extract_errors_from_data(dataframe):
+    max_list = dataframe[["pitch", "yaw", "roll"]].abs().max(axis=1)
+    dataframe["distance_from_center"] = max_list.values
 
-    error_pitch_eval = "pitch_error = report.pitch - report.predicted_pitch"
-    error_yaw_eval = "yaw_error = report.yaw - report.predicted_yaw"
-    error_roll_eval = "roll_error = report.roll - report.predicted_roll"
+    error_pitch_eval = "pitch_error = dataframe.pitch - dataframe.predicted_pitch"
+    error_yaw_eval = "yaw_error = dataframe.yaw - dataframe.predicted_yaw"
+    error_roll_eval = "roll_error = dataframe.roll - dataframe.predicted_roll"
 
-    report = pd.eval(error_pitch_eval, target=report)
-    report = pd.eval(error_yaw_eval, target=report)
-    report = pd.eval(error_roll_eval, target=report)
+    dataframe = pd.eval(error_pitch_eval, target=dataframe)
+    dataframe = pd.eval(error_yaw_eval, target=dataframe)
+    dataframe = pd.eval(error_roll_eval, target=dataframe)
 
-    report["pitch_error"] = report["pitch_error"].abs()
-    report["yaw_error"] = report["yaw_error"].abs()
-    report["roll_error"] = report["roll_error"].abs()
+    dataframe["pitch_error"] = dataframe["pitch_error"].abs()
+    dataframe["yaw_error"] = dataframe["yaw_error"].abs()
+    dataframe["roll_error"] = dataframe["roll_error"].abs()
 
-    max_list = report[["pitch_error", "yaw_error", "roll_error"]].abs().max(axis=1)
-    report["max_error"] = max_list.values
-    max_list = report[["pitch_error", "yaw_error", "roll_error"]].abs().idxmax(axis=1)
-    report["max_error_axis"] = max_list.values
+    max_list = dataframe[["pitch_error", "yaw_error", "roll_error"]].abs().max(axis=1)
+    dataframe["max_error"] = max_list.values
+    max_list = dataframe[["pitch_error", "yaw_error", "roll_error"]].abs().idxmax(axis=1)
+    dataframe["max_error_axis"] = max_list.values
 
-    report[0] = None
+    dataframe[0] = None
 
-    return report
+    return dataframe
 
 
 def calculate_accuracies(dataframe, title):
-    pitch_acc = accuracy_score(dataframe["pitch"], dataframe["predicted_pitch"])
-    roll_acc = accuracy_score(dataframe["roll"], dataframe["predicted_roll"])
-    yaw_acc = accuracy_score(dataframe["yaw"], dataframe["predicted_yaw"])
-    mean_error = mean_absolute_error(dataframe[["pitch", "yaw", "roll"]],
-                                     dataframe[["pitch_error", "yaw_error", "roll_error"]])
-    print("accuracy of %s , pitch %f, yaw %f, roll %f, MAE %f" % title, pitch_acc, roll_acc, yaw_acc, mean_error)
+    pitch_acc = dataframe["pitch_error"].mean()
+    roll_acc = dataframe["roll_error"].mean()
+    yaw_acc = dataframe["yaw_error"].mean()
+    mean_error = (pitch_acc+ roll_acc +yaw_acc)/3
+    print("accuracy of %s , pitch %f, yaw %f, roll %f, MAE %f" % (title, pitch_acc, roll_acc, yaw_acc, mean_error))
 
 
 if __name__ == "__main__":
@@ -104,8 +97,8 @@ if __name__ == "__main__":
 
         if number_of_model is None:
             prediction_data = extract_errors_from_data(pd.read_csv(prediction_path))
-            plot_results(get_averages(prediction_data), identifier)
-            calculate_accuracies(prediction_data,identifier)
+            plot_results(get_averages(prediction_data), edge_type + "test_split")
+            calculate_accuracies(prediction_data, identifier)
 
         else:
             if edge_type not in edge_type_index:
@@ -115,6 +108,7 @@ if __name__ == "__main__":
             report_container[idx].append(extract_errors_from_data(pd.read_csv(prediction_path)))
 
     for idx, x in enumerate(edge_type_index):
-        results = get_averages(pd.concat(report_container[idx]))
-        plot_results(results, x + "_leave_one_out")
-        calculate_accuracies(results, x + "_leave_one_out")
+        report = pd.concat(report_container[idx])
+        averages = get_averages(report)
+        plot_results(averages, x + "_loso")
+        calculate_accuracies(report, x + "_loso")

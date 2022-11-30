@@ -2,8 +2,6 @@ import glob
 import re
 
 import numpy
-from stellargraph.layer import GraphConvolution, SortPooling
-from stellargraph.mapper import PaddedGraphGenerator
 
 import Config
 import DataUtils
@@ -13,7 +11,7 @@ import tensorflow
 from tensorflow import keras
 from keras import Sequential
 import matplotlib as plt
-from keras.saving.save import load_model
+
 import pandas as pd
 
 
@@ -35,14 +33,25 @@ def get_object_data_from_path(path):
 
 
 if __name__ == "__main__":
+    from stellargraph.layer import GraphConvolution, SortPooling
+    from stellargraph.mapper import PaddedGraphGenerator
+    from keras.saving.save import load_model
+
     model_paths = glob.glob(Config.working_directory + "v" + str(Config.version) + "/models/*")
     histories_paths = glob.glob(Config.working_directory + "v" + str(Config.version) + "/histories/*")
     scalers_paths = glob.glob(Config.working_directory + "v" + str(Config.version) + "/scalers/*")
 
-    all_networkx_list = DataUtils.data_loader(Config.working_directory + "/ricci_graphs_by_subject.pickle")
+    euclidean_graphs = DataUtils.data_loader(Config.working_directory + "/euclidean_graphs_by_subject.pickle")
+    ricci_graphs = DataUtils.data_loader(Config.working_directory + "/ricci_graphs_by_subject.pickle")
+    cityblock_graphs = DataUtils.data_loader(Config.working_directory + "/cityblock_graphs_by_subject.pickle")
+    cosine_graphs = DataUtils.data_loader(Config.working_directory+"/cosine_graphs_by_subject.pickle")
     label_list_by_subject = DataUtils.data_loader(Config.working_directory + "/labels_by_subject.pickle")
 
-    all_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
+    cosine_graphs = [x for idx, x in enumerate(cosine_graphs) if idx not in [18, 12]]
+    cityblock_graphs = [x for idx, x in enumerate(cityblock_graphs) if idx not in [18, 12]]
+    euclidean_graphs = [x for idx, x in enumerate(euclidean_graphs) if idx not in [18, 12]]
+    ricci_graphs = [x for idx, x in enumerate(ricci_graphs) if idx not in [18, 12]]
+
     label_list_by_subject = [x for idx, x in enumerate(label_list_by_subject) if idx not in [18, 12]]
     custom_objects = {"GraphConvolution": GraphConvolution, "SortPooling": SortPooling}
 
@@ -67,10 +76,15 @@ if __name__ == "__main__":
         plot.clear()
         if number_of_model is not None:
             pandas_labels = pd.DataFrame.from_records(label_list_by_subject[number_of_model])
-            if edge_type == "ricci" or edge_type == "euclidean":
-                testing_graphs = DataUtils.graph_cleaner(all_networkx_list[number_of_model], edge_type=edge_type)
-            else:
-                testing_graphs = all_networkx_list[number_of_model]
+            if edge_type == "ricci":
+                testing_graphs = DataUtils.graph_cleaner(ricci_graphs[number_of_model], edge_type="ricci")
+
+            elif edge_type == "cosine":
+                testing_graphs = cosine_graphs[number_of_model]
+            elif edge_type == "euclidean":
+                testing_graphs = euclidean_graphs[number_of_model]
+            else: testing_graphs = cityblock_graphs[number_of_model]
+
             pandas_graph_list = DataUtils.networkx_list_to_pandas_list(testing_graphs)
             if pandas_graph_list[0]["nodes"].empty:
                 print("skipping", identifier)
@@ -87,8 +101,14 @@ if __name__ == "__main__":
                                                                        "/" + identifier + "test_labels.pickle")
 
         generator = PaddedGraphGenerator(graphs=stellargraph_graphs)
+
         obj = generator.flow(stellargraph_graphs)
-        non_scaled_prediction = model.predict(obj)
+        try:
+            non_scaled_prediction = model.predict(obj)
+        except Exception as msg:
+            print(msg)
+            continue
+
         print("non_scaled_prediction", non_scaled_prediction)
         scaled_prediction = []
         for x in non_scaled_prediction:

@@ -97,7 +97,7 @@ def generate_model(graphs_for_training, label, eval_graphs, eval_labels):
 
 
 if __name__ == "__main__":
-    for active_weight in Config.all_weight_types:
+    for active_weight in ["ricci"]:
         Config.weight_type = active_weight
         print("Edge Type:", Config.weight_type)
         labels_list_by_subject = DataUtils.data_loader(Config.working_directory + "labels_by_subject.pickle")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_graphs_by_subject.pickle")
             cleaned_list = []
             for x in all_networkx_list:
-                cleaned_list.append(DataUtils.graph_cleaner(x))
+                cleaned_list.append(DataUtils.graph_cleaner(x, edge_type="ricci"))
             all_networkx_list = cleaned_list
 
         else:
@@ -140,15 +140,16 @@ if __name__ == "__main__":
                 print("prepping for training:", name_file_identifier, " on ", len(filtered_networkx_list))
                 training_set = []
                 label_list = []
-                for x in [x for idx, x in enumerate(filtered_networkx_list) if idx != excluded_subject_id and idx != 16]:
+                for x in [x for idx, x in enumerate(filtered_networkx_list) if idx != excluded_subject_id and idx != 6]:
                     for y in x:
                         training_set.append(y)
 
-                for x in [x for idx, x in enumerate(filtered_labels_list_by_subject) if idx != excluded_subject_id and idx != 16]:
+                for x in [x for idx, x in enumerate(filtered_labels_list_by_subject) if idx != excluded_subject_id and idx != 6]:
                     for y in x:
                         label_list.append(y)
                 print("testingsetlenght:", len(training_set))
                 print("label lenght:", len(label_list))
+                print(len(training_set[0]))
 
                 print("translating to pandas")
                 pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
@@ -167,7 +168,7 @@ if __name__ == "__main__":
                 testing_pandas_labels = pd.DataFrame(d, columns=training_pandas_labels.columns)
 
                 model, history = generate_model(stellargraph_graphs, training_pandas_labels, stellargraph_evaluation,
-                                                evaluation_labels)
+                                                pandas_evaluation_labels)
 
                 model.save(
                     Config.working_directory + "v" + str(Config.version) + "/models/" + name_file_identifier + "model.h5")
@@ -193,9 +194,8 @@ if __name__ == "__main__":
                 for y in x:
                     label_list.append(y)
 
-            print("testing set lenght:", len(dataset))
-            print("labels lenght:", len(label_list))
 
+            print(len(dataset[0]))
             print("translating to pandas")
             pandas_graph_list = DataUtils.networkx_list_to_pandas_list(dataset)
             print("translating to stellargraph")
