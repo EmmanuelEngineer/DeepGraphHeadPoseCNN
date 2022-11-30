@@ -8,6 +8,9 @@ import DataUtils
 import ModelTester
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_absolute_error
+
 from IPython.display import display
 
 
@@ -55,7 +58,7 @@ def get_averages(dataframe):
                          "roll": averages_for_roll}, index=intervals)
 
 
-def extract_report_from_data(report):
+def extract_errors_from_data(report):
     max_list = report[["pitch", "yaw", "roll"]].abs().max(axis=1)
     report["distance_from_center"] = max_list.values
 
@@ -81,6 +84,15 @@ def extract_report_from_data(report):
     return report
 
 
+def calculate_accuracies(dataframe, title):
+    pitch_acc = accuracy_score(dataframe["pitch"], dataframe["predicted_pitch"])
+    roll_acc = accuracy_score(dataframe["roll"], dataframe["predicted_roll"])
+    yaw_acc = accuracy_score(dataframe["yaw"], dataframe["predicted_yaw"])
+    mean_error = mean_absolute_error(dataframe[["pitch", "yaw", "roll"]],
+                                     dataframe[["pitch_error", "yaw_error", "roll_error"]])
+    print("accuracy of %s , pitch %f, yaw %f, roll %f, MAE %f" % title, pitch_acc, roll_acc, yaw_acc, mean_error)
+
+
 if __name__ == "__main__":
     predictions_paths = glob.glob(Config.working_directory + "v" + str(Config.version) + "/predictions/*")
     edge_type_index = []
@@ -91,16 +103,18 @@ if __name__ == "__main__":
         print(prediction_path)
 
         if number_of_model is None:
-            prediction_data = extract_report_from_data(pd.read_csv(prediction_path))
+            prediction_data = extract_errors_from_data(pd.read_csv(prediction_path))
             plot_results(get_averages(prediction_data), identifier)
+            calculate_accuracies(prediction_data,identifier)
 
         else:
             if edge_type not in edge_type_index:
                 edge_type_index.append(edge_type)
                 report_container.append([])
             idx = edge_type_index.index(edge_type)
-            report_container[idx].append(extract_report_from_data(pd.read_csv(prediction_path)))
+            report_container[idx].append(extract_errors_from_data(pd.read_csv(prediction_path)))
 
     for idx, x in enumerate(edge_type_index):
-        plot_results(get_averages(pd.concat(report_container[idx])), x+"_subject_indipendence")
-
+        results = get_averages(pd.concat(report_container[idx]))
+        plot_results(results, x + "_leave_one_out")
+        calculate_accuracies(results, x + "_leave_one_out")
