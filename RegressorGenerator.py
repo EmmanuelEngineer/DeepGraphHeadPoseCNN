@@ -13,6 +13,7 @@ from stellargraph import StellarGraph
 import torch
 from sklearn import model_selection
 import tensorrt
+from tensorflow import keras
 from tensorflow.keras import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Conv1D, MaxPool1D, Dropout, Flatten
@@ -97,7 +98,7 @@ def generate_model(graphs_for_training, label, eval_graphs, eval_labels):
 
 
 if __name__ == "__main__":
-    for active_weight in ["ricci"]:
+    for active_weight in Config.all_weight_types:
         Config.weight_type = active_weight
         print("Edge Type:", Config.weight_type)
         labels_list_by_subject = DataUtils.data_loader(Config.working_directory + "labels_by_subject.pickle")
@@ -106,7 +107,7 @@ if __name__ == "__main__":
             all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_graphs_by_subject.pickle")
             cleaned_list = []
             for x in all_networkx_list:
-                cleaned_list.append(DataUtils.graph_cleaner(x, edge_type="ricci"))
+                cleaned_list.append(DataUtils.graph_cleaner(x, edge_type=Config.weight_type))
             all_networkx_list = cleaned_list
 
         else:
@@ -125,26 +126,17 @@ if __name__ == "__main__":
         filtered_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
         filtered_labels_list_by_subject = [x for idx, x in enumerate(labels_list_by_subject) if idx not in [18, 12]]
         if Config.RegressionSetting.subject_indipendence:
-            evaluation_set = all_networkx_list[6]
-            pandas_evaluation_graphs = DataUtils.networkx_list_to_pandas_list(evaluation_set)
-            stellargraph_evaluation = DataUtils.convert_pandas_graph_list_to_stellargraph(pandas_evaluation_graphs)
-
-            evaluation_labels = labels_list_by_subject[6]
-            pandas_evaluation_labels = pd.DataFrame.from_records(evaluation_labels)
-            d = scaler.transform(pandas_evaluation_labels)
-            pandas_evaluation_labels = pd.DataFrame(d, columns=training_pandas_labels.columns)
-
             for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(filtered_networkx_list):
                 name_file_identifier = Config.weight_type + "_no_" + str(excluded_subject_id) + "_"
 
                 print("prepping for training:", name_file_identifier, " on ", len(filtered_networkx_list))
                 training_set = []
                 label_list = []
-                for x in [x for idx, x in enumerate(filtered_networkx_list) if idx != excluded_subject_id and idx != 6]:
+                for x in [x for idx, x in enumerate(filtered_networkx_list) if idx != excluded_subject_id]:
                     for y in x:
                         training_set.append(y)
 
-                for x in [x for idx, x in enumerate(filtered_labels_list_by_subject) if idx != excluded_subject_id and idx != 6]:
+                for x in [x for idx, x in enumerate(filtered_labels_list_by_subject) if idx != excluded_subject_id]:
                     for y in x:
                         label_list.append(y)
                 print("testingsetlenght:", len(training_set))
@@ -153,22 +145,23 @@ if __name__ == "__main__":
 
                 print("translating to pandas")
                 pandas_graph_list = DataUtils.networkx_list_to_pandas_list(training_set)
-                testing_pandas_graph_list = DataUtils.networkx_list_to_pandas_list(excluded_subject_networkx_graphs)
                 print("translating to stellargraph")
                 stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(pandas_graph_list)
-                testing_stellargraph_graphs = DataUtils.convert_pandas_graph_list_to_stellargraph(testing_pandas_graph_list)
                 print(stellargraph_graphs[0].info())
                 training_pandas_labels = pd.DataFrame.from_records(label_list)
-                testing_pandas_labels = pd.DataFrame.from_records(filtered_labels_list_by_subject[excluded_subject_id])
 
                 d = scaler.transform(training_pandas_labels)
+
                 training_pandas_labels = pd.DataFrame(d, columns=training_pandas_labels.columns)
+                train_graphs, evaluation_graphs, train_labels, evaluation_labels = model_selection.train_test_split(
+                    stellargraph_graphs, training_pandas_labels, train_size=0.7, test_size=None, random_state=20
+                )
 
-                d = scaler.transform(testing_pandas_labels)
-                testing_pandas_labels = pd.DataFrame(d, columns=training_pandas_labels.columns)
+                print("train size", len(train_labels))
+                print("evaluation size", len(evaluation_labels))
 
-                model, history = generate_model(stellargraph_graphs, training_pandas_labels, stellargraph_evaluation,
-                                                pandas_evaluation_labels)
+                model, history = generate_model(train_graphs, train_labels, evaluation_graphs,
+                                                evaluation_labels)
 
                 model.save(
                     Config.working_directory + "v" + str(Config.version) + "/models/" + name_file_identifier + "model.h5")
@@ -178,6 +171,7 @@ if __name__ == "__main__":
                 DataUtils.data_saver(Config.working_directory + "v" + str(
                     Config.version) + "/scalers/" + name_file_identifier + "result_scaler.pickle",
                                      scaler)
+                keras.backend.clear_session()
 
         else:
             name_file_identifier = Config.weight_type + "_no_subject_indipendence_"
@@ -234,3 +228,5 @@ if __name__ == "__main__":
                 Config.working_directory + "v" + str(
                     Config.version) + "/labels/" + name_file_identifier + "test_labels.pickle",
                 pd.DataFrame(scaler.inverse_transform(test_labels), columns=training_pandas_labels.columns))
+            keras.backend.clear_session()
+

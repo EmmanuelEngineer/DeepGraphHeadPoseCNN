@@ -57,6 +57,8 @@ if __name__ == "__main__":
 
     for model_path in model_paths:
         identifier, edge_type, number_of_model = get_object_data_from_path(model_path)
+        if edge_type != "euclidean":
+            continue
         model = load_model(model_path, custom_objects=custom_objects)
 
         history = None
@@ -82,7 +84,8 @@ if __name__ == "__main__":
             elif edge_type == "cosine":
                 testing_graphs = cosine_graphs[number_of_model]
             elif edge_type == "euclidean":
-                testing_graphs = euclidean_graphs[number_of_model]
+                testing_graphs = DataUtils.graph_cleaner(ricci_graphs[number_of_model], edge_type="euclidean")
+
             else: testing_graphs = cityblock_graphs[number_of_model]
 
             pandas_graph_list = DataUtils.networkx_list_to_pandas_list(testing_graphs)
@@ -119,3 +122,4 @@ if __name__ == "__main__":
         pandas_predictions = pandas_predictions.join(pandas_labels)
         pandas_predictions.to_csv(
             Config.working_directory + "v" + str(Config.version) + "/predictions/" + identifier + ".csv")
+        keras.backend.clear_session()

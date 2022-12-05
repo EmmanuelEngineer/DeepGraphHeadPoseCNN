@@ -7,13 +7,12 @@ class Debug:
     active = False
 
 
-version = 5
+version = 6
 image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/" if not Debug.active else Test.image_dataset
 working_directory = "./workingdirectory/" if not Debug.active else Test.working_directory
 n_of_threads = 4
 weight_type = "cityblock"  # euclidean cosine cityblock ricci
-all_weight_types = [ "ricci"]
-#"euclidean", "cosine","cityblock",
+all_weight_types = ["euclidean"]#"ricci",,"cityblock""cosine"
 
 class RegressionSetting:
     subject_indipendence = True

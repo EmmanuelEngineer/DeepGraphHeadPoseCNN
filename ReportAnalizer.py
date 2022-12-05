@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 
 def plot_results(results, title):
     results.plot.bar(rot=0, title=title, figsize=(15, 8))
-
     plt.legend()
     plt.xlabel("Verità Effettiva")
     plt.ylabel("Errore")
