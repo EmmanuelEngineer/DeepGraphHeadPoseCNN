@@ -12,10 +12,10 @@ image_dataset = "/home/emmavico/Documents/Tirocinio/biwi_rgb_renamed/" if not De
 working_directory = "./workingdirectory/" if not Debug.active else Test.working_directory
 n_of_threads = 4
 weight_type = "cityblock"  # euclidean cosine cityblock ricci
-all_weight_types = ["euclidean"]#"ricci",,"cityblock""cosine"
+all_weight_types = ["euclidean"] #"ricci","cityblock""cosine"
 
 class RegressionSetting:
-    subject_indipendence = True
+    leave_one_subject_out = True
 
 
 class ImageVisualizer:

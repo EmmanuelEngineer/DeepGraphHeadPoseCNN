@@ -35,11 +35,11 @@ def generate_model(graphs_for_training, label, eval_graphs, eval_labels):
     generator = PaddedGraphGenerator(graphs=graphs_for_training)
     layer_sizes = [300, 300, 300, 300, 300, 150, 1]
     k = 35
-    dgcnn_model = DeepGraphCNN(  # Rete neurale che fa da traduttore per quella successiva
+    dgcnn_model = DeepGraphCNN(  # mathematical model that will translate the graph for the next sequence of layers
         layer_sizes=layer_sizes,
         activations=["tanh", "tanh", "tanh", "tanh", "tanh", "tanh", "tanh"],
-        # attivazioni applicate all'output del layer: Fare riferimento a https://keras.io/api/layers/activations/
-        k=k,  # numero di tensori in output
+        # for the activation functions refer to https://keras.io/api/layers/activations/
+        k=k,  # number of output tensor
         bias=False,
         generator=generator,
     )
@@ -55,28 +55,27 @@ def generate_model(graphs_for_training, label, eval_graphs, eval_labels):
     x_out = Dense(units=256, activation="tanh")(x_out)
 
     x_out = Dropout(rate=0.5)(x_out)
-    # Per evitare overfitting setta casualmente degli input a 0 per poi amplificarne il resto per non
-    # alterare la somma degli input
 
     predictions = Dense(units=3)(x_out)
+    #3 units, 3 outputs(pitch,yaw,roll)
 
     model_to_fit = Model(inputs=x_inp,
-                         outputs=predictions)  # Setta il modello Keras che effettuerà i calcoli e le predizioni
+                         outputs=predictions)  # creating the model
     model_to_fit.summary()
     model_to_fit.compile(
         optimizer=Adam(lr=0.001), loss='mean_squared_error', metrics=[metrics.mean_squared_error],
-        # Creazione del modello effettivo
+        # setting up the optimizer, the loss function (used for training) and the metrics(only to report the advancement of the model, they will not influence the training)
     )
 
     gen = PaddedGraphGenerator(graphs=graphs_for_training)
 
-    train_gen = gen.flow(  # dati per l'addestramento
+    train_gen = gen.flow(  # preparing data for the training
         range(len(graphs_for_training)),
         targets=label,
         batch_size=40,
         symmetric_normalization=False,
     )
-    test_generator = PaddedGraphGenerator(graphs=eval_graphs)
+    test_generator = PaddedGraphGenerator(graphs=eval_graphs) # preparing data for the evaluation
     test_gen = test_generator.flow(  # dati per il test
         range(len(eval_graphs)),
         targets=eval_labels,
@@ -88,18 +87,15 @@ def generate_model(graphs_for_training, label, eval_graphs, eval_labels):
 
     history_internal = model_to_fit.fit(
         train_gen, epochs=epochs, verbose=1, validation_data=test_gen, shuffle=True,
-    )
-    test_metrics = model_to_fit.evaluate(test_gen)
-    print("\nTest Set Metrics:")
-    for name, val in zip(model_to_fit.metrics_names, test_metrics):
-        print("\t{}: {:0.4f}".format(name, val))
+    )  # fitting the model
 
     return model_to_fit, history_internal
 
 
 if __name__ == "__main__":
-    for active_weight in Config.all_weight_types:
-        Config.weight_type = active_weight
+    for active_weight in Config.all_weight_types:  # for sequential training / i.e. training the models for each
+        # metrics in one go
+        Config.weight_type = active_weight  # set the current metric
         print("Edge Type:", Config.weight_type)
         labels_list_by_subject = DataUtils.data_loader(Config.working_directory + "labels_by_subject.pickle")
 
@@ -107,12 +103,14 @@ if __name__ == "__main__":
             all_networkx_list = DataUtils.data_loader(Config.working_directory + "ricci_graphs_by_subject.pickle")
             cleaned_list = []
             for x in all_networkx_list:
-                cleaned_list.append(DataUtils.graph_cleaner(x, edge_type=Config.weight_type))
+                cleaned_list.append(DataUtils.graph_cleaner(x, edge_type=Config.weight_type))  # because the ricci
+                # graph function will only add more data to the graph and not erasing it, a cleaning process is needed
             all_networkx_list = cleaned_list
 
         else:
-            all_networkx_list = DataUtils.data_loader(Config.working_directory + Config.weight_type + "_graphs_by_subject"
-                                                                                                      ".pickle")
+            all_networkx_list = DataUtils.data_loader(
+                Config.working_directory + Config.weight_type + "_graphs_by_subject"
+                                                                ".pickle")
 
         label_list = []
 
@@ -120,23 +118,25 @@ if __name__ == "__main__":
             for y in x:
                 label_list.append(y)
 
-        scaler = MinMaxScaler()  # Scaling label
+        scaler = MinMaxScaler()  # Scaling labels
         training_pandas_labels = pd.DataFrame.from_records(label_list)
         scaler.fit(training_pandas_labels)
         filtered_networkx_list = [x for idx, x in enumerate(all_networkx_list) if idx not in [18, 12]]
+        # removing the subjects that have been recorded multiple type.
+        # index based on what is the ImageAnalizer sub-directories output is
         filtered_labels_list_by_subject = [x for idx, x in enumerate(labels_list_by_subject) if idx not in [18, 12]]
-        if Config.RegressionSetting.subject_indipendence:
+        if Config.RegressionSetting.leave_one_subject_out:
             for excluded_subject_id, excluded_subject_networkx_graphs in enumerate(filtered_networkx_list):
                 name_file_identifier = Config.weight_type + "_no_" + str(excluded_subject_id) + "_"
 
                 print("prepping for training:", name_file_identifier, " on ", len(filtered_networkx_list))
                 training_set = []
                 label_list = []
-                for x in [x for idx, x in enumerate(filtered_networkx_list) if idx != excluded_subject_id]:
+                for x in [x for idx, x in enumerate(filtered_networkx_list) if idx != excluded_subject_id]: # putting all graphs in one list
                     for y in x:
                         training_set.append(y)
 
-                for x in [x for idx, x in enumerate(filtered_labels_list_by_subject) if idx != excluded_subject_id]:
+                for x in [x for idx, x in enumerate(filtered_labels_list_by_subject) if idx != excluded_subject_id]: # putting all labels in one list
                     for y in x:
                         label_list.append(y)
                 print("testingsetlenght:", len(training_set))
@@ -151,8 +151,8 @@ if __name__ == "__main__":
                 training_pandas_labels = pd.DataFrame.from_records(label_list)
 
                 d = scaler.transform(training_pandas_labels)
-
                 training_pandas_labels = pd.DataFrame(d, columns=training_pandas_labels.columns)
+
                 train_graphs, evaluation_graphs, train_labels, evaluation_labels = model_selection.train_test_split(
                     stellargraph_graphs, training_pandas_labels, train_size=0.7, test_size=None, random_state=20
                 )
@@ -163,17 +163,20 @@ if __name__ == "__main__":
                 model, history = generate_model(train_graphs, train_labels, evaluation_graphs,
                                                 evaluation_labels)
 
+                #saving the data in the working directory in a version sub-directory to keep the data after each time you modify something.
+                # WARNING create the directory structure BEFORE starting the code
                 model.save(
-                    Config.working_directory + "v" + str(Config.version) + "/models/" + name_file_identifier + "model.h5")
+                    Config.working_directory + "v" + str(
+                        Config.version) + "/models/" + name_file_identifier + "model.h5")
                 DataUtils.data_saver(Config.working_directory + "v" + str(
                     Config.version) + "/histories/" + name_file_identifier + "model_history.pickle",
                                      history)
                 DataUtils.data_saver(Config.working_directory + "v" + str(
                     Config.version) + "/scalers/" + name_file_identifier + "result_scaler.pickle",
                                      scaler)
-                keras.backend.clear_session()
+                keras.backend.clear_session()  # to clean the ram after each training
 
-        else:
+        else: # same thing as before except for the testing set separation
             name_file_identifier = Config.weight_type + "_no_subject_indipendence_"
             print(Config.working_directory + "v" + str(
                 Config.version) + "/histories/" + name_file_identifier + "model_history.pickle")
@@ -187,7 +190,6 @@ if __name__ == "__main__":
             for x in filtered_labels_list_by_subject:
                 for y in x:
                     label_list.append(y)
-
 
             print(len(dataset[0]))
             print("translating to pandas")
@@ -223,10 +225,9 @@ if __name__ == "__main__":
                                  scaler)
             DataUtils.data_saver(Config.working_directory + "v" + str(
                 Config.version) + "/test_graphs/" + name_file_identifier + "testgraphs.pickle",
-                                 test_graphs)
+                                 test_graphs) # saving the test graphs because they are chosen randomly
             DataUtils.data_saver(
                 Config.working_directory + "v" + str(
                     Config.version) + "/labels/" + name_file_identifier + "test_labels.pickle",
                 pd.DataFrame(scaler.inverse_transform(test_labels), columns=training_pandas_labels.columns))
             keras.backend.clear_session()
-
