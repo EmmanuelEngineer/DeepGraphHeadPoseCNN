@@ -33,7 +33,7 @@ Depending on the Config file setting, it will use a 70 10 20 train-validation-te
 
 This file will test every neural network and build a report.
 ## ReportAnalyzer
-Using the report will generate graphs based on the split and metric type.
+Using the reports will generate graphs based on the split and metric type.
 
 
 
