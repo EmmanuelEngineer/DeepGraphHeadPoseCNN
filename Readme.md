@@ -18,7 +18,7 @@ After obtained the landmarks was needed to generate the graphs, using **scipy** 
 >**NOTE:** i decided to switch between metrics creating a function for each metric instead of using only a function and a switch or series of "if"for efficiency purpose. 
 I didn't want to activate the same chain of "if" thousands of time for the same graph.
 
-![Visualizzation of what Image Genarator and Graph generator did to the data.](https://drive.google.com/file/d/1g71UvlDXNQ8ZNs572-co5Y5WfALTyMhL/view?usp=share_link)
+![Visualizzation of what Image Genarator and Graph generator did to the data.](https://photos.app.goo.gl/h3Pq5SUqtqksuKig9)
 
 ## ApplyRiccisCurvature
 
