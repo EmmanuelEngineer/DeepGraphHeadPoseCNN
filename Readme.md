@@ -15,10 +15,12 @@ During the analysis, the landmarks coordinates are **normalized**  to eliminate 
 Some landmarks are filtered to data-diminish noise for the neural network.
 ## GraphGenerator
 After obtained the landmarks was needed to generate the graphs, using **scipy** libraries to calculate the distance between nodes. The algorithm applied was the k-nearest neighbor with k as 5.
->**NOTE:** i decided to switch between metrics creating a function for each metric instead of using only a function and a switch or series of "if"for efficiency purpose. 
-I didn't want to activate the same chain of "if" thousands of time for the same graph.
 
-![Visualizzation of what Image Genarator and Graph generator did to the data.](https://photos.app.goo.gl/h3Pq5SUqtqksuKig9)
+>Visualizzation of what Image Genarator and Graph generator did to the data.
+![Visualizzation of what Image Genarator and Graph generator did to the data.](https://github.com/EmmanuelEngineer/DeepGraphHeadPoseCNN/blob/main/Image%20Summary.png)
+
+>**NOTE:** i decided to switch between metrics creating a function for each metric instead of using only a function and a switch or series of "if" for efficiency purpose. 
+I didn't want to activate the same chain of "if" thousands of time for the same graph.
 
 ## ApplyRiccisCurvature
 
